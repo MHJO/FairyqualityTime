@@ -1,7 +1,6 @@
 import requests, os
 import json
 import pandas as pd
-from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 import time
 from datetime import datetime
@@ -10,7 +9,7 @@ import sqlite3
 
 
 """
-    당신의 퇴근요정
+    당신의 퇴근요정!
 
     나라장터 api 활용 엑셀 시트 저장
 """
@@ -30,6 +29,19 @@ class Util:
                 queryUrl += f"{i}={params[i]}&"
         # print (queryUrl)
         return queryUrl
+    
+    def compare_with_time(compare_time):
+        tdata_datetime = datetime.strptime(compare_time, "%Y-%m-%d %H:%M:%S")
+
+        current_datetime = datetime.now()
+
+        print(f"현재 시간: {current_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"비교 대상 시간: {tdata_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        if current_datetime < tdata_datetime:
+            return "게시중"
+        else:
+            return "마감"
     
 class Sqlite:
     def clearDB():
@@ -92,24 +104,6 @@ class Sqlite:
                         AND ntceKindNm="{parmas[i][3]}" AND bidNtceDt="{parmas[i][8]}"
                         )
                 '''
-                # sql_command = f'''
-                #     INSERT INTO BidPblancListInfoServcPPSSrch (bidNtceNo,bidNtceOrd,bidNtceNm,ntceInsttNm,dminsttNm,bidNtceDt,bidClseDt,asignBdgtAmt,srvceDivNm)
-                #         VALUES ("{parmas[i][0]}", "{parmas[i][1]}", "{parmas[i][2]}", "{parmas[i][3]}",
-                #         "{parmas[i][4]}", "{parmas[i][5]}", "{parmas[i][6]}","{parmas[i][7]}", "{parmas[i][8]}")
-                #         ON CONFLICT(bidNtceNo) 
-                #         DO UPDATE SET 
-                #             bidNtceNm = EXCLUDED.bidNtceNm,
-                #             ntceInsttNm = EXCLUDED.ntceInsttNm,
-                #             dminsttNm = EXCLUDED.dminsttNm,
-                #             bidNtceDt = EXCLUDED.bidNtceDt ,
-                #             bidClseDt = EXCLUDED.bidClseDt,
-                #             asignBdgtAmt = EXCLUDED.asignBdgtAmt,
-                #             srvceDivNm = EXCLUDED.srvceDivNm
-                # '''
-                # bidNtceNo = EXCLUDED.bidNtceNo,
-                # bidNtceOrd = EXCLUDED.bidNtceOrd,
-                # print (sql_command)
-
                 cursor.execute(sql_command)
                 cursor.fetchall()
                 connection.commit()
@@ -119,12 +113,11 @@ class Sqlite:
             print (str(e))
 
 
+# region [사전규격정보서비스]
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 사전규격정보서비스 '''
-    global classNm
-    classNm = "HrcspSsstndrdInfoService"
-        
-    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1",inqryBgnDt="",inqryEndDt=""):
+
+    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1",inqryBgnDt="",inqryEndDt="",bidNtceNm="", swBizObjYn="Y"):
         '''	
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
 
@@ -132,18 +125,31 @@ class HrcspSsstndrdInfoService:
             -진행일자: 최근 일주일(ex: 4.8~4.15)
             -업무구분: 일반용역, 기술용역
             - 사업명: 구축, 유지관리, 유지보수
+            - sw 대상 : Y
         
         '''
 
         selectApi="getPublicPrcureThngInfoServcPPSSrch"
+        dict1 = {
+            "inqryDiv":inqryDiv, # 조회구분
+            "inqryBgnDt":inqryBgnDt, # 조회시작일시
+            "inqryEndDt":inqryEndDt, #조회종료일시
+            "bidNtceNm":bidNtceNm, # 입찰공고명
+            "swBizObjYn":swBizObjYn, # SW대상여부 - 무조건 대상(Y)            
+        }
 
-        url = f"{basicUrl}ao/{classNm}/{selectApi}?inqryDiv={inqryDiv}&inqryBgnDt={inqryBgnDt}&inqryEndDt={inqryEndDt}&pageNo=1&numOfRows=100&ServiceKey={serivceKey}"
+        queryUrl = Util.SetqueryUrl(dict1)
+
+        url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo=1&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
+        print (url)
         req = requests.get(url)
 
         if req.status_code == 200:
             try:
                 # XML 파싱
                 root = ET.fromstring(req.text)
+                totalCount =  (root.find('.//body').find('totalCount').text)
+                print (f"사전규격 용역 목록 조회 = > {bidNtceNm}, totalCount = {totalCount}")
 
                 # body -> items 태그로 이동
                 items = root.find('.//body/items')
@@ -151,12 +157,34 @@ class HrcspSsstndrdInfoService:
                     data = []
                     for item in items.findall('item'):
                         # 각 item 태그에서 추출할 데이터 (필요한 태그 추가)
-                        ref_no = item.find('refNo').text if item.find('refNo') is not None else "N/A"
-                        order_instt_nm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A"
-                        prdct_Clsfc_No_Nm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A"
-                        asign_bdgt_amt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"
+                        bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A" # 업무구분명
+                        prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A" # 사업명
+                        orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A" # 공고기관명
+                        rlDminsttNm = item.find('rlDminsttNm').text if item.find('rlDminsttNm') is not None else "N/A" # 수요기관명
+                        opninRgstClseDt = item.find('opninRgstClseDt').text if item.find('opninRgstClseDt') is not None else "N/A" # 의견마감등록일시
+                        # 현재 시간 날짜와 비교하여 지났으면 '마감', pass | 안지났으면 '게시중'
+                        Status = Util.compare_with_time(opninRgstClseDt)
+                        if Status == "마감":
+                            pass
+                        ofclNm = item.find('ofclNm').text if item.find('ofclNm') is not None else "N/A" # 담당자명
+                        swBizObjYn = item.find('swBizObjYn').text if item.find('swBizObjYn') is not None else "N/A" # Sw사업대상여부
+                        rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A" # 접수일자 -> 진행일자,
+                        asignBdgtAmt =item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A" # 배정예산액
+                        
+                        # 업무구분, 사업명, 수요기관, 공고기관, 담당자, 진행일자, 진행상태, 배정예산액
 
-                        data.append({"참조번호": ref_no,"품명":prdct_Clsfc_No_Nm, "발주기관명": order_instt_nm, "배정예산금액(원화)":  f"{int(asign_bdgt_amt):,}"})
+                        if Status == "마감":
+                            pass
+                        else:
+                            data.append({
+                                "업무구분": bsnsDivNm,
+                                "사업명":prdctClsfcNoNm, 
+                                "수요기관": rlDminsttNm, 
+                                "공고기관": orderInsttNm, 
+                                "담당자명": ofclNm, 
+                                "진행일자": rcptDt, 
+                                "진행상태":Status,
+                                "배정예산금액(원화)":  f"{int(asignBdgtAmt):,}"})
 
                     # pandas 데이터프레임으로 변환
                     df = pd.DataFrame(data)
@@ -181,11 +209,10 @@ class HrcspSsstndrdInfoService:
 
         else:
             print(f"요청 실패, 상태 코드: {req.status_code}")
+# endregion
 
 
-
-# 나라장터 입찰공고정보서비스 - BidPublicInfoService
-# 나라장터검색조건에 의한 입찰공고공사조회
+# region [나라장터 입찰공고정보서비스 - BidPublicInfoService]
 class BidPublicInfoService:
     '''
     나라장터 입찰공고정보서비스
@@ -201,74 +228,6 @@ class BidPublicInfoService:
     
     global classNm
     classNm = "BidPublicInfoService"
-
-    # region [나라장터검색조건에 의한 입찰공고공사조회]
-    def getBidPblancListInfoCnstwkPPSSrch(inqryDiv="1",inqryBgnDt="",inqryEndDt="",bidNtceNm=""):
-        '''나라장터검색조건에 의한 입찰공고공사조회'''
-        selectApi="getBidPblancListInfoCnstwkPPSSrch"
-        '''
-        inqryDiv
-        1:공고게시일시, 2:개찰일시
-            1. 공고게시일시 : 공고일자(pblancDate)
-            2. 개찰일시 : 개찰일시(opengDt)
-
-        inqryBgnDt, inqryEndDt (조회시작일시, 조회종료일시) ==> YYYYMMDDHHMM
-            조회구분이 '1'인 경우 공고게시일시 필수, '2'인 경우 개찰일시 필수
-        indstrytyCd 업종코드
-        indstrytyNm 업종명
-        '''
-        dict1 = {"inqryDiv":inqryDiv,"inqryBgnDt":inqryBgnDt,"inqryEndDt":inqryEndDt,"bidNtceNm":bidNtceNm,"indstrytyCd":indstrytyCd}
-        queryUrl = Util.SetqueryUrl(dict1)
-        # queryUrl = f"inqryDiv={inqryDiv}&inqryBgnDt={inqryBgnDt}&inqryEndDt={inqryEndDt}&bidNtceNm={bidNtceNm}"
-        url = f"{basicUrl}ad/{classNm}/{selectApi}?pageNo=1&numOfRows=1000&ServiceKey={serivceKey}&{queryUrl}type=xml"
-        req = requests.get(url)
-
-        if req.status_code == 200:
-            try:
-                # XML 파싱
-                root = ET.fromstring(req.text)
-
-                # body -> items 태그로 이동
-                items = root.find('.//body/items')
-                if items is not None:
-                    data = []
-                    for item in items.findall('item'):
-                        # 각 item 태그에서 추출할 데이터 (필요한 태그 추가)
-                        ref_no = item.find('refNo').text if item.find('refNo') is not None else "N/A"
-                        bidNtceNm = item.find('bidNtceNm').text if item.find('bidNtceNm') is not None else "N/A"
-                        ntceInsttNm = item.find('ntceInsttNm').text if item.find('ntceInsttNm') is not None else "N/A"
-                        bdgtAmt = item.find('bdgtAmt').text if item.find('bdgtAmt') is not None else "N/A"
-
-                        data.append({"참조번호": ref_no,
-                                     "입찰공고명":bidNtceNm, 
-                                     "공고기관명": ntceInsttNm, 
-                                     "예산금액":   f"{int(bdgtAmt):,}"})
-
-                    # pandas 데이터프레임으로 변환
-                    df = pd.DataFrame(data)
-
-                    # 데이터프레임 출력
-                    print("DataFrame 출력:")
-                    print(df)
-
-                    # Excel 파일로 저장 (openpyxl 엔진 사용)
-                    filename = "나라장터-입찰공고공사조회_{}.xlsx".format(time.strftime("%Y%m%d%H%M%S"))
-                    df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl')
-                    print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
-
-                else:
-                    print("items 태그를 찾을 수 없습니다.")
-            except ET.ParseError as e:
-                print(f"XML 파싱 에러: {e}")
-            except ValueError as e:
-                print(f"데이터 변환 에러: {e}")
-            except Exception as e:
-                print(f"다른 에러 발생: {e}")
-
-        else:
-            print(f"요청 실패, 상태 코드: {req.status_code}")
-
-    # endregion
 
     # region[나라장터검색조건에 의한 입찰공고용역조회]
     def getBidPblancListInfoServcPPSSrch(inqryBgnDt="",inqryEndDt="",bidNtceNm="" ):
@@ -358,50 +317,62 @@ class BidPublicInfoService:
             print(f"요청 실패, 상태 코드: {req.status_code}")
 
     # endregion
+# endregion
 
 
-inputDate = datetime.now()
-startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
-endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
+# inputDate = datetime.now()
+# startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
+# endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
 
-print (inputDate)
-print (rf"{os.getcwd()}\Database\입찰공고.db")
+# print (inputDate)
+# print (rf"{os.getcwd()}\Database\입찰공고.db")
 
-Sqlite.clearDB()
-print ("DB 초기화")
-
-
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+# Sqlite.clearDB()
+# print ("DB 초기화")
 
 
-# 기준 날짜 설정
-inputDate = datetime.now()
-startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
-endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
 
-# 문자열로 된 날짜를 datetime 객체로 변환
-start = datetime.strptime(startDate[:8], '%Y%m%d')
-end = datetime.strptime(endDate[:8], '%Y%m%d')
 
-# 한 달 단위로 날짜를 나누기
-current = start
-bidNtceNms = ["구축", "유지보수", "유지관리"]
-while current < end:
-    next_month = current + relativedelta(months=1)
-    if next_month > end:
-        next_month = end  # endDate를 초과하지 않도록 조정
+
+# # 기준 날짜 설정
+# inputDate = datetime.now()
+# startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
+# endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
+
+# # 문자열로 된 날짜를 datetime 객체로 변환
+# start = datetime.strptime(startDate[:8], '%Y%m%d')
+# end = datetime.strptime(endDate[:8], '%Y%m%d')
+
+# # 한 달 단위로 날짜를 나누기
+# current = start
+# bidNtceNms = ["구축", "유지보수", "유지관리"]
+# while current < end:
+#     next_month = current + relativedelta(months=1)
+#     if next_month > end:
+#         next_month = end  # endDate를 초과하지 않도록 조정
     
-    startDate1 =current.strftime('%Y%m%d')+ "0000"
-    endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
-    print(f"기간: {startDate1} ~ {endDate1}")
-    for bidNtceNm in bidNtceNms:
-        BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
-    current = next_month
+#     startDate1 =current.strftime('%Y%m%d')+ "0000"
+#     endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
+#     print(f"기간: {startDate1} ~ {endDate1}")
+#     for bidNtceNm in bidNtceNms:
+#         BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
+#     current = next_month
 
-savePath = input("저장 경로 입력 : ")
-Sqlite.selectDB(savePath)
-input("수행 완료, any key press....")
+# savePath = input("저장 경로 입력 : ")
+# Sqlite.selectDB(savePath)
+# input("수행 완료, any key press....")
 
 
 # print (rf"{os.getcwd()}\Database\입찰공고.db")
+
+'''
+    - 진행일자: 최근 일주일(ex: 4.8~4.15)
+    - 업무구분: 일반용역, 기술용역
+    - 사업명: 구축, 유지관리, 유지보수
+    - sw 대상 : Y
+
+'''
+inqryBgnDt="202504160000"
+inqryEndDt="202504172359"
+bidNtceNm = "구축"
+HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=inqryBgnDt,inqryEndDt=inqryEndDt,bidNtceNm=bidNtceNm)
