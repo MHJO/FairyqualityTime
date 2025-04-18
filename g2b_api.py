@@ -34,10 +34,6 @@ class Util:
         tdata_datetime = datetime.strptime(compare_time, "%Y-%m-%d %H:%M:%S")
 
         current_datetime = datetime.now()
-
-        print(f"현재 시간: {current_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"비교 대상 시간: {tdata_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
-
         if current_datetime < tdata_datetime:
             return "게시중"
         else:
@@ -117,98 +113,101 @@ class Sqlite:
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 사전규격정보서비스 '''
 
-    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1",inqryBgnDt="",inqryEndDt="",bidNtceNm="", swBizObjYn="Y"):
-        '''	
+    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y"):
+        '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
 
-            -검색유형: 사전규격공개
-            -진행일자: 최근 일주일(ex: 4.8~4.15)
-            -업무구분: 일반용역, 기술용역
+            - 검색유형: 사전규격공개
+            - 진행일자: 최근 일주일(ex: 4.8~4.15)
+            - 업무구분: 일반용역, 기술용역
             - 사업명: 구축, 유지관리, 유지보수
-            - sw 대상 : Y
-        
+            - SW 대상: Y
         '''
-
-        selectApi="getPublicPrcureThngInfoServcPPSSrch"
+        selectApi = "getPublicPrcureThngInfoServcPPSSrch"
         dict1 = {
-            "inqryDiv":inqryDiv, # 조회구분
-            "inqryBgnDt":inqryBgnDt, # 조회시작일시
-            "inqryEndDt":inqryEndDt, #조회종료일시
-            "bidNtceNm":bidNtceNm, # 입찰공고명
-            "swBizObjYn":swBizObjYn, # SW대상여부 - 무조건 대상(Y)            
+            "inqryDiv": inqryDiv,  # 조회구분
+            "inqryBgnDt": inqryBgnDt,  # 조회시작일시
+            "inqryEndDt": inqryEndDt,  # 조회종료일시
+            "bidNtceNm": bidNtceNm,  # 입찰공고명
+            "swBizObjYn": swBizObjYn,  # SW대상여부 - 무조건 대상(Y)
         }
 
         queryUrl = Util.SetqueryUrl(dict1)
+        pageNo = 1  # 초기 페이지 번호 설정
+        totalCounts = 100
+        while True:
+            url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
+            print(url)
+            req = requests.get(url)
 
-        url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo=1&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
-        print (url)
-        req = requests.get(url)
+            if req.status_code == 200:
+                try:
+                    # XML 파싱
+                    root = ET.fromstring(req.text)
+                    
+                    totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
+                    print(f"사전규격 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
+                    
+                    
 
-        if req.status_code == 200:
-            try:
-                # XML 파싱
-                root = ET.fromstring(req.text)
-                totalCount =  (root.find('.//body').find('totalCount').text)
-                print (f"사전규격 용역 목록 조회 = > {bidNtceNm}, totalCount = {totalCount}")
+                    # items = root.find('.//body/items')
+                    # if items is not None:
+                    #     data = []
+                    #     for item in items.findall('item'):
+                    #         # 각 item 태그에서 추출할 데이터
+                    #         bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A"  # 업무구분명
+                    #         prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A"  # 사업명
+                    #         orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A"  # 공고기관명
+                    #         rlDminsttNm = item.find('rlDminsttNm').text if item.find('rlDminsttNm') is not None else "N/A"  # 수요기관명
+                    #         opninRgstClseDt = item.find('opninRgstClseDt').text if item.find('opninRgstClseDt') is not None else "N/A"  # 의견마감등록일시
+                    #         Status = Util.compare_with_time(opninRgstClseDt)
+                    #         if Status == "마감":
+                    #             pass
+                    #         ofclNm = item.find('ofclNm').text if item.find('ofclNm') is not None else "N/A"  # 담당자명
+                    #         swBizObjYn = item.find('swBizObjYn').text if item.find('swBizObjYn') is not None else "N/A"  # SW 사업 대상 여부
+                    #         rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A"  # 접수일자 -> 진행일자
+                    #         asignBdgtAmt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"  # 배정 예산액
 
-                # body -> items 태그로 이동
-                items = root.find('.//body/items')
-                if items is not None:
-                    data = []
-                    for item in items.findall('item'):
-                        # 각 item 태그에서 추출할 데이터 (필요한 태그 추가)
-                        bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A" # 업무구분명
-                        prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A" # 사업명
-                        orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A" # 공고기관명
-                        rlDminsttNm = item.find('rlDminsttNm').text if item.find('rlDminsttNm') is not None else "N/A" # 수요기관명
-                        opninRgstClseDt = item.find('opninRgstClseDt').text if item.find('opninRgstClseDt') is not None else "N/A" # 의견마감등록일시
-                        # 현재 시간 날짜와 비교하여 지났으면 '마감', pass | 안지났으면 '게시중'
-                        Status = Util.compare_with_time(opninRgstClseDt)
-                        if Status == "마감":
-                            pass
-                        ofclNm = item.find('ofclNm').text if item.find('ofclNm') is not None else "N/A" # 담당자명
-                        swBizObjYn = item.find('swBizObjYn').text if item.find('swBizObjYn') is not None else "N/A" # Sw사업대상여부
-                        rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A" # 접수일자 -> 진행일자,
-                        asignBdgtAmt =item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A" # 배정예산액
-                        
-                        # 업무구분, 사업명, 수요기관, 공고기관, 담당자, 진행일자, 진행상태, 배정예산액
+                    #         if Status != "마감":
+                    #             data.append({
+                    #                 "업무구분": bsnsDivNm,
+                    #                 "사업명": prdctClsfcNoNm,
+                    #                 "수요기관": rlDminsttNm,
+                    #                 "공고기관": orderInsttNm,
+                    #                 "담당자명": ofclNm,
+                    #                 "진행일자": rcptDt,
+                    #                 "진행상태": Status,
+                    #                 "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
+                    #             })
 
-                        if Status == "마감":
-                            pass
-                        else:
-                            data.append({
-                                "업무구분": bsnsDivNm,
-                                "사업명":prdctClsfcNoNm, 
-                                "수요기관": rlDminsttNm, 
-                                "공고기관": orderInsttNm, 
-                                "담당자명": ofclNm, 
-                                "진행일자": rcptDt, 
-                                "진행상태":Status,
-                                "배정예산금액(원화)":  f"{int(asignBdgtAmt):,}"})
+                    #     # pandas 데이터프레임으로 변환
+                    #     df = pd.DataFrame(data)
 
-                    # pandas 데이터프레임으로 변환
-                    df = pd.DataFrame(data)
+                    #     # 데이터프레임 출력
+                    #     print("DataFrame 출력:")
+                    #     print(df)
 
-                    # 데이터프레임 출력
-                    print("DataFrame 출력:")
-                    print(df)
+                    #     # Excel 파일로 저장
+                    #     filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d%H%M%S"))
+                    #     df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl')
+                    #     print("데이터가 엑셀 파일로 저장되었습니다.")
 
-                    # Excel 파일로 저장 (openpyxl 엔진 사용)
-                    filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d%H%M%S"))
-                    df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl')
-                    print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
+                    pageNo += 1  # 페이지 번호 증가
+                    print(totalCounts)
+                    # totalCount가 100 이하라면 반복 종료
+                    if (totalCount >= totalCounts):
+                        totalCounts += 100
+                    else:
+                        break
+                    
+                    
 
-                else:
-                    print("items 태그를 찾을 수 없습니다.")
-            except ET.ParseError as e:
-                print(f"XML 파싱 에러: {e}")
-            except ValueError as e:
-                print(f"데이터 변환 에러: {e}")
-            except Exception as e:
-                print(f"다른 에러 발생: {e}")
-
-        else:
-            print(f"요청 실패, 상태 코드: {req.status_code}")
+                except ET.ParseError as e:
+                    print(f"XML 파싱 에러: {e}")
+                except Exception as e:
+                    print(f"다른 에러 발생: {e}")
+            else:
+                print(f"요청 실패, 상태 코드: {req.status_code}")
 # endregion
 
 
@@ -372,7 +371,7 @@ class BidPublicInfoService:
     - sw 대상 : Y
 
 '''
-inqryBgnDt="202504160000"
-inqryEndDt="202504172359"
+inqryBgnDt="202503150000"
+inqryEndDt="202504182359"
 bidNtceNm = "구축"
 HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=inqryBgnDt,inqryEndDt=inqryEndDt,bidNtceNm=bidNtceNm)
