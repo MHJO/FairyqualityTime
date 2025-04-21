@@ -135,6 +135,7 @@ class HrcspSsstndrdInfoService:
         queryUrl = Util.SetqueryUrl(dict1)
         pageNo = 1  # 초기 페이지 번호 설정
         totalCounts = 100
+        data = []
         while True:
             url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
             print(url)
@@ -147,60 +148,54 @@ class HrcspSsstndrdInfoService:
                     
                     totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
                     print(f"사전규격 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
-                    
-                    
 
-                    # items = root.find('.//body/items')
-                    # if items is not None:
-                    #     data = []
-                    #     for item in items.findall('item'):
-                    #         # 각 item 태그에서 추출할 데이터
-                    #         bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A"  # 업무구분명
-                    #         prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A"  # 사업명
-                    #         orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A"  # 공고기관명
-                    #         rlDminsttNm = item.find('rlDminsttNm').text if item.find('rlDminsttNm') is not None else "N/A"  # 수요기관명
-                    #         opninRgstClseDt = item.find('opninRgstClseDt').text if item.find('opninRgstClseDt') is not None else "N/A"  # 의견마감등록일시
-                    #         Status = Util.compare_with_time(opninRgstClseDt)
-                    #         if Status == "마감":
-                    #             pass
-                    #         ofclNm = item.find('ofclNm').text if item.find('ofclNm') is not None else "N/A"  # 담당자명
-                    #         swBizObjYn = item.find('swBizObjYn').text if item.find('swBizObjYn') is not None else "N/A"  # SW 사업 대상 여부
-                    #         rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A"  # 접수일자 -> 진행일자
-                    #         asignBdgtAmt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"  # 배정 예산액
+                    items = root.find('.//body/items')
+                    if items is not None:
+                        for item in items.findall('item'):
+                            # 각 item 태그에서 추출할 데이터
+                            bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A"  # 업무구분명
+                            prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A"  # 사업명
+                            orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A"  # 공고기관명
+                            rlDminsttNm = item.find('rlDminsttNm').text if item.find('rlDminsttNm') is not None else "N/A"  # 수요기관명
+                            opninRgstClseDt = item.find('opninRgstClseDt').text if item.find('opninRgstClseDt') is not None else "N/A"  # 의견마감등록일시
+                            ofclNm = item.find('ofclNm').text if item.find('ofclNm') is not None else "N/A"  # 담당자명
+                            swBizObjYn = item.find('swBizObjYn').text if item.find('swBizObjYn') is not None else "N/A"  # SW 사업 대상 여부
+                            rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A"  # 접수일자 -> 진행일자
+                            asignBdgtAmt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"  # 배정 예산액
+                            Status = Util.compare_with_time(opninRgstClseDt)
+                            if Status != "마감":
+                                data.append({
+                                    "업무구분": bsnsDivNm,
+                                    "사업명": prdctClsfcNoNm,
+                                    "수요기관": rlDminsttNm,
+                                    "공고기관": orderInsttNm,
+                                    "담당자명": ofclNm,
+                                    "진행일자": rcptDt,
+                                    "진행상태": Status,
+                                    "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
+                                })
 
-                    #         if Status != "마감":
-                    #             data.append({
-                    #                 "업무구분": bsnsDivNm,
-                    #                 "사업명": prdctClsfcNoNm,
-                    #                 "수요기관": rlDminsttNm,
-                    #                 "공고기관": orderInsttNm,
-                    #                 "담당자명": ofclNm,
-                    #                 "진행일자": rcptDt,
-                    #                 "진행상태": Status,
-                    #                 "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
-                    #             })
-
-                    #     # pandas 데이터프레임으로 변환
-                    #     df = pd.DataFrame(data)
-
-                    #     # 데이터프레임 출력
-                    #     print("DataFrame 출력:")
-                    #     print(df)
-
-                    #     # Excel 파일로 저장
-                    #     filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d%H%M%S"))
-                    #     df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl')
-                    #     print("데이터가 엑셀 파일로 저장되었습니다.")
+                        
 
                     pageNo += 1  # 페이지 번호 증가
-                    print(totalCounts)
+                    print(totalCounts, len(data), pageNo)
                     # totalCount가 100 이하라면 반복 종료
                     if (totalCount >= totalCounts):
-                        totalCounts += 100
+                        totalCounts = 100 * pageNo
                     else:
                         break
-                    
-                    
+
+                    # # pandas 데이터프레임으로 변환
+                    # df = pd.DataFrame(data)
+
+                    # # 데이터프레임 출력
+                    # print("DataFrame 출력:")
+                    # print(df)
+
+                    # # Excel 파일로 저장
+                    # filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
+                    # df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl', sheet_name="사전규격")
+                    # print("데이터가 엑셀 파일로 저장되었습니다.")
 
                 except ET.ParseError as e:
                     print(f"XML 파싱 에러: {e}")
