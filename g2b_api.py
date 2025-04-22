@@ -43,22 +43,29 @@ class Util:
             return "마감"
     
 class Sqlite:
-    def clearDB():
-        connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
-        cursor = connection.cursor()
-        sql_command = """
+    def clearDB(type):
+        if type =="1":
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+            sql_command = """
                 DELETE FROM BidPblancListInfoServcPPSSrch
             """
+        elif (type =="2"):
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
+            sql_command = """
+                DELETE FROM HrcspSsstndrdInfoService
+            """
+        cursor = connection.cursor()
+        
         cursor.execute(sql_command)
         cursor.fetchall()
         connection.commit()
 
         connection.close()
 
-    def selectDB(savePath):
-        connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
-        cursor = connection.cursor()
-        sql_command = """
+    def selectDB(savePath, type=""):
+        if type == "1":
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+            sql_command = """
                 SELECT srvceDivNm as 업무구분,
                     ntceKindNm as 구분, 
                     (bidNtceNo||'-'||bidNtceOrd) as 입찰공고번호, 
@@ -69,40 +76,99 @@ class Sqlite:
                     printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS 사업금액
                     from BidPblancListInfoServcPPSSrch
             """
+            sheet_name="입찰공고용역"
+
+        elif (type == "2"):
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
+            sql_command = """
+                SELECT bsnsDivNm as 업무구분,
+                    prdctClsfcNoNm as 사업명, 
+                    rlDminsttNm as 수요기관, 
+                    orderInsttNm as 공고기관, 
+                    ofclNm as 담당자, 
+                    rcptDt as 진행일자, 
+                    printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS 배정예산금액(원화)
+                    from HrcspSsstndrdInfoService
+            """
+            sheet_name="사전규격"
+
+        cursor = connection.cursor()
+        print (sheet_name)
         data = cursor.execute(sql_command)
         
         # 컬럼명 포함 데이터프레임 생성
         col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
-        df = pd.DataFrame(data, columns=col_names)
+        # df = pd.DataFrame(data, columns=col_names)
         # df = pd.DataFrame(data)
 
-        # 데이터프레임 출력
-        print("DataFrame 출력:")
-        print(df)
+        # # 데이터프레임 출력
+        # print("DataFrame 출력:")
+        # print(df)
 
-        # Excel 파일로 저장 (openpyxl 엔진 사용)
-        # filename = "나라장터-입찰공고용역조회_{}.xlsx".format(time.strftime("%Y%m%d"))
-        df.to_excel(rf"{savePath}\{filename}", index=False, engine='openpyxl', sheet_name="입찰공고용역")
+        # pandas 데이터프레임으로 변환
+        df_new = pd.DataFrame(data,columns=col_names)
+
+        # 데이터프레임 출력
+        file_path=rf"{savePath}\{filename}"
+        try:
+            # 기존 엑셀 파일에서 sheet_name 읽기
+            existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
+        except FileNotFoundError:
+            # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
+            print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
+            existing_df = pd.DataFrame()
+            with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
+        except ValueError:
+            # 지정된 시트가 없을 경우 빈 데이터프레임 생성
+            print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
+            existing_df = pd.DataFrame()
+            
+        # Concatenate the existing and new DataFrames
+        updated_df = pd.concat([existing_df, df_new], ignore_index=True)
+        with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+            updated_df.to_excel(writer, sheet_name='사전규격', index=False)
         print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
+        
+        # # Excel 파일로 저장 (openpyxl 엔진 사용)
+        # df.to_excel(rf"{savePath}\{filename}", index=False, engine='openpyxl', sheet_name=sheet_name)
+        # print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
 
         connection.close()
 
-    def Upsert(parmas):
+    def Upsert(parmas, type):
         try:
-            connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+            if type =="1":
+                connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+            elif type =="2":
+                connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
             cursor = connection.cursor()
             for i in range(len(parmas)):
-                sql_command = f'''
-                    INSERT INTO BidPblancListInfoServcPPSSrch (
-                        srvceDivNm, bidNtceNo, bidNtceOrd, ntceKindNm, bidNtceNm, ntceInsttNm, dminsttNm, opengDt, bidNtceDt, bidClseDt, asignBdgtAmt
+                if type =="1":
+                    sql_command = f'''
+                        INSERT INTO BidPblancListInfoServcPPSSrch (
+                            srvceDivNm, bidNtceNo, bidNtceOrd, ntceKindNm, bidNtceNm, ntceInsttNm, dminsttNm, opengDt, bidNtceDt, bidClseDt, asignBdgtAmt
+                            )
+                            SELECT "{parmas[i][0]}", "{parmas[i][1]}", "{parmas[i][2]}", "{parmas[i][3]}", "{parmas[i][4]}", "{parmas[i][5]}", "{parmas[i][6]}", "{parmas[i][7]}", "{parmas[i][8]}", "{parmas[i][9]}", "{parmas[i][10]}"
+                            WHERE NOT EXISTS (
+                                SELECT 1 FROM BidPblancListInfoServcPPSSrch
+                            WHERE srvceDivNm="{parmas[i][0]}" AND bidNtceNo = "{parmas[i][1]}" AND bidNtceOrd = "{parmas[i][2]}" 
+                            AND ntceKindNm="{parmas[i][3]}" AND bidNtceDt="{parmas[i][8]}"
+                            )
+                    '''
+                elif type == "2":
+                    sql_command = f''' 
+                        INSERT INTO HrcspSsstndrdInfoService (
+                            bsnsDivNm, prdctClsfcNoNm, rlDminsttNm, orderInsttNm, ofclNm, rcptDt, Status, asignBdgtAmt
                         )
-                        SELECT "{parmas[i][0]}", "{parmas[i][1]}", "{parmas[i][2]}", "{parmas[i][3]}", "{parmas[i][4]}", "{parmas[i][5]}", "{parmas[i][6]}", "{parmas[i][7]}", "{parmas[i][8]}", "{parmas[i][9]}", "{parmas[i][10]}"
+                        SELECT "{parmas[i][0]}", "{parmas[i][1]}", "{parmas[i][2]}", "{parmas[i][3]}", "{parmas[i][4]}", "{parmas[i][5]}", "{parmas[i][6]}", "{parmas[i][7]}"
                         WHERE NOT EXISTS (
-                            SELECT 1 FROM BidPblancListInfoServcPPSSrch
-                        WHERE srvceDivNm="{parmas[i][0]}" AND bidNtceNo = "{parmas[i][1]}" AND bidNtceOrd = "{parmas[i][2]}" 
-                        AND ntceKindNm="{parmas[i][3]}" AND bidNtceDt="{parmas[i][8]}"
+                            SELECT 1 FROM HrcspSsstndrdInfoService
+                        WHERE bsnsDivNm="{parmas[i][0]}" AND prdctClsfcNoNm = "{parmas[i][1]}" AND rlDminsttNm = "{parmas[i][2]}" 
+                        AND orderInsttNm="{parmas[i][3]}" AND rcptDt="{parmas[i][5]}"
                         )
-                '''
+                    '''
                 cursor.execute(sql_command)
                 cursor.fetchall()
                 connection.commit()
@@ -116,7 +182,7 @@ class Sqlite:
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 사전규격정보서비스 '''
 
-    def getPublicPrcureThngInfoServcPPSSrch(savePath="",inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
+    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
         '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
 
@@ -152,13 +218,16 @@ class HrcspSsstndrdInfoService:
                 try:
                     # XML 파싱
                     root = ET.fromstring(req.text)
-                    data = []
+                    
                     totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
                     print(f"사전규격 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
-
+                    datas = []
+                    print (len(datas))
                     items = root.find('.//body/items')
                     if items is not None:
+                        
                         for item in items.findall('item'):
+                            data = []
                             # 각 item 태그에서 추출할 데이터
                             bsnsDivNm = item.find('bsnsDivNm').text if item.find('bsnsDivNm') is not None else "N/A"  # 업무구분명
                             prdctClsfcNoNm = item.find('prdctClsfcNoNm').text if item.find('prdctClsfcNoNm') is not None else "N/A"  # 사업명
@@ -170,62 +239,49 @@ class HrcspSsstndrdInfoService:
                             rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A"  # 접수일자 -> 진행일자
                             asignBdgtAmt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"  # 배정 예산액
                             Status = Util.compare_with_time(opninRgstClseDt)
-                            if statusType == "Y": # 마감은 제외
-                                if Status != "마감":
-                                    data.append({
-                                        "업무구분": bsnsDivNm,
-                                        "사업명": prdctClsfcNoNm,
-                                        "수요기관": rlDminsttNm,
-                                        "공고기관": orderInsttNm,
-                                        "담당자명": ofclNm,
-                                        "진행일자": rcptDt,
-                                        "진행상태": Status,
-                                        "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
-                                    })
-                            elif statusType == "A":
-                                data.append({
-                                        "업무구분": bsnsDivNm,
-                                        "사업명": prdctClsfcNoNm,
-                                        "수요기관": rlDminsttNm,
-                                        "공고기관": orderInsttNm,
-                                        "담당자명": ofclNm,
-                                        "진행일자": rcptDt,
-                                        "진행상태": Status,
-                                        "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
-                                    })
+                            data.append(bsnsDivNm)
+                            data.append(prdctClsfcNoNm)
+                            data.append(rlDminsttNm)
+                            data.append(orderInsttNm)
+                            data.append(ofclNm)
+                            data.append(rcptDt)
+                            data.append(Status)
+                            data.append(asignBdgtAmt)
+                            datas.append(data)
+                    Sqlite.Upsert(datas,type="2")
+                            
+                            
 
-                    # pandas 데이터프레임으로 변환
-                    df_new = pd.DataFrame(data)
+                            
 
-                    # 데이터프레임 출력
-                    print("DataFrame 출력:")
-                    file_path=rf"{savePath}\{filename}"
-                    sheet_name = "사전규격"
-                    try:
-                        # 기존 엑셀 파일에서 sheet_name 읽기
-                        existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
-                    except FileNotFoundError:
-                        # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
-                        print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
-                        existing_df = pd.DataFrame()
-                        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
-                            existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
-                        print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
-                    except ValueError:
-                        # 지정된 시트가 없을 경우 빈 데이터프레임 생성
-                        print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
-                        existing_df = pd.DataFrame()
+                    # # pandas 데이터프레임으로 변환
+                    # df_new = pd.DataFrame(data)
+
+                    # # 데이터프레임 출력
+                    # print("DataFrame 출력:")
+                    # file_path=rf"{savePath}\{filename}"
+                    # sheet_name = "사전규격"
+                    # try:
+                    #     # 기존 엑셀 파일에서 sheet_name 읽기
+                    #     existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
+                    # except FileNotFoundError:
+                    #     # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
+                    #     print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
+                    #     existing_df = pd.DataFrame()
+                    #     with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                    #         existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    #     print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
+                    # except ValueError:
+                    #     # 지정된 시트가 없을 경우 빈 데이터프레임 생성
+                    #     print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
+                    #     existing_df = pd.DataFrame()
                         
-                    # Concatenate the existing and new DataFrames
-                    updated_df = pd.concat([existing_df, df_new], ignore_index=True)
-                    with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                        updated_df.to_excel(writer, sheet_name='사전규격', index=False)
+                    # # Concatenate the existing and new DataFrames
+                    # updated_df = pd.concat([existing_df, df_new], ignore_index=True)
+                    # with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                    #     updated_df.to_excel(writer, sheet_name='사전규격', index=False)
 
-
-                    # # df.to_excel(file_path, index=False, engine='openpyxl', sheet_name="사전규격")
-                    # print("데이터가 엑셀 파일로 저장되었습니다.")      
                     pageNo += 1  # 페이지 번호 증가
-                    # print(totalCounts, len(PrcureThngInfo), pageNo)
                     # totalCount가 100 이하라면 반복 종료
                     if totalCount > totalCounts:
                         totalCounts = totalCounts* pageNo
@@ -257,8 +313,6 @@ class BidPublicInfoService:
     -공고명: 구축 / 유지관리 / 유지보수 (각각 검색)   
     
     '''
-
-    
     global classNm
     classNm = "BidPublicInfoService"
 
@@ -280,7 +334,7 @@ class BidPublicInfoService:
         queryUrl = Util.SetqueryUrl(dict1)
 
         url = f"{basicUrl}ad/{classNm}/{selectApi}?pageNo=1&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}type=xml"
-        print (url)
+        # print (url)
         req = requests.get(url)
 
         if req.status_code == 200:
@@ -289,7 +343,7 @@ class BidPublicInfoService:
                 root = ET.fromstring(req.text)
 
                 totalCount =  (root.find('.//body').find('totalCount').text)
-                print (totalCount)
+                print ("용역 => ", totalCount)
 
                 # body -> items 태그로 이동
                 items = root.find('.//body/items')
@@ -334,7 +388,7 @@ class BidPublicInfoService:
                         data.append(asignBdgtAmt)
                         
                         datas.append(data)
-                    Sqlite.Upsert(datas)
+                    Sqlite.Upsert(datas,type="1")
                     
                 else:
                         print("items 태그를 찾을 수 없습니다.")
@@ -360,7 +414,8 @@ endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
 print (inputDate)
 print (rf"{os.getcwd()}\Database\입찰공고.db")
 
-Sqlite.clearDB()
+Sqlite.clearDB(type="1")
+Sqlite.clearDB(type="2")
 print ("DB 초기화")
 
 
@@ -392,7 +447,7 @@ while current < end:
     current = next_month
 
 savePath = input("저장 경로 입력 : ")
-Sqlite.selectDB(savePath)
+# Sqlite.selectDB(savePath, type="1")
 print ("입찰용역 완료 -----> 사전규격 진행")
 
 
@@ -401,8 +456,8 @@ startDate2 = (inputDate).strftime('%Y%m%d') + "0000"
 endDate2 = (inputDate + relativedelta(days=7)).strftime('%Y%m%d') + "2359"
 statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
 for bidNtceNm in bidNtceNms:
-    HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(savePath=savePath,inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
-
+    HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
+# Sqlite.selectDB(savePath, type="2")
 input("수행 완료, any key press....")
 
 
