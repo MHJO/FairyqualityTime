@@ -116,7 +116,7 @@ class Sqlite:
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 사전규격정보서비스 '''
 
-    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
+    def getPublicPrcureThngInfoServcPPSSrch(savePath="",inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
         '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
 
@@ -199,13 +199,22 @@ class HrcspSsstndrdInfoService:
 
                     # 데이터프레임 출력
                     print("DataFrame 출력:")
-                    file_path=rf"D:\iway\2025\기타\나라장터\{filename}"
-                    
+                    file_path=rf"{savePath}\{filename}"
+                    sheet_name = "사전규격"
                     try:
-                        existing_df = pd.read_excel(file_path, sheet_name='사전규격')
+                        # 기존 엑셀 파일에서 sheet_name 읽기
+                        existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
                     except FileNotFoundError:
-                        existing_df = pd.DataFrame() 
-                        existing_df.to_excel(file_path, sheet_name='사전규격', index=False, engine='openpyxl',)
+                        # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
+                        print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
+                        existing_df = pd.DataFrame()
+                        with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                            existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                        print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
+                    except ValueError:
+                        # 지정된 시트가 없을 경우 빈 데이터프레임 생성
+                        print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
+                        existing_df = pd.DataFrame()
                         
                     # Concatenate the existing and new DataFrames
                     updated_df = pd.concat([existing_df, df_new], ignore_index=True)
@@ -344,62 +353,60 @@ class BidPublicInfoService:
 # endregion
 
 
-# inputDate = datetime.now()
-# startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
-# endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
+inputDate = datetime.now()
+startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
+endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
 
-# print (inputDate)
-# print (rf"{os.getcwd()}\Database\입찰공고.db")
+print (inputDate)
+print (rf"{os.getcwd()}\Database\입찰공고.db")
 
-# Sqlite.clearDB()
-# print ("DB 초기화")
-
-
+Sqlite.clearDB()
+print ("DB 초기화")
 
 
 
-# # 기준 날짜 설정
-# inputDate = datetime.now()
-# startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
-# endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
 
-# # 문자열로 된 날짜를 datetime 객체로 변환
-# start = datetime.strptime(startDate[:8], '%Y%m%d')
-# end = datetime.strptime(endDate[:8], '%Y%m%d')
 
-# # 한 달 단위로 날짜를 나누기
-# current = start
-# bidNtceNms = ["구축", "유지보수", "유지관리"]
-# while current < end:
-#     next_month = current + relativedelta(months=1)
-#     if next_month > end:
-#         next_month = end  # endDate를 초과하지 않도록 조정
+# 기준 날짜 설정
+inputDate = datetime.now()
+startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
+endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
+
+# 문자열로 된 날짜를 datetime 객체로 변환
+start = datetime.strptime(startDate[:8], '%Y%m%d')
+end = datetime.strptime(endDate[:8], '%Y%m%d')
+
+# 한 달 단위로 날짜를 나누기
+current = start
+bidNtceNms = ["구축", "유지보수", "유지관리"]
+while current < end:
+    next_month = current + relativedelta(months=1)
+    if next_month > end:
+        next_month = end  # endDate를 초과하지 않도록 조정
     
-#     startDate1 =current.strftime('%Y%m%d')+ "0000"
-#     endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
-#     print(f"기간: {startDate1} ~ {endDate1}")
-#     for bidNtceNm in bidNtceNms:
-#         BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
-#     current = next_month
+    startDate1 =current.strftime('%Y%m%d')+ "0000"
+    endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
+    print(f"기간: {startDate1} ~ {endDate1}")
+    for bidNtceNm in bidNtceNms:
+        BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
+    current = next_month
 
-# savePath = input("저장 경로 입력 : ")
-# Sqlite.selectDB(savePath)
-# input("수행 완료, any key press....")
+savePath = input("저장 경로 입력 : ")
+Sqlite.selectDB(savePath)
+print ("입찰용역 완료 -----> 사전규격 진행")
 
 
-# print (rf"{os.getcwd()}\Database\입찰공고.db")
 
-'''
-    - 진행일자: 최근 일주일(ex: 4.8~4.15)
-    - 업무구분: 일반용역, 기술용역
-    - 사업명: 구축, 유지관리, 유지보수
-    - sw 대상 : Y
+startDate2 = (inputDate).strftime('%Y%m%d') + "0000"
+endDate2 = (inputDate + relativedelta(days=7)).strftime('%Y%m%d') + "2359"
+statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+for bidNtceNm in bidNtceNms:
+    HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(savePath=savePath,inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
 
-'''
-inqryBgnDt="202504080000"
-inqryEndDt="202504152359"
-bidNtceNm = "구축"
-statusType = input("진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
-HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=inqryBgnDt,inqryEndDt=inqryEndDt,bidNtceNm=bidNtceNm, statusType=statusType)
+input("수행 완료, any key press....")
+
+
+
+
 
 
