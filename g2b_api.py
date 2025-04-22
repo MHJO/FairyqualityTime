@@ -62,7 +62,7 @@ class Sqlite:
 
         connection.close()
 
-    def selectDB(savePath, type=""):
+    def selectDB(savePath, type="", statusType=""):
         if type == "1":
             connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
             sql_command = """
@@ -80,16 +80,31 @@ class Sqlite:
 
         elif (type == "2"):
             connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
-            sql_command = """
-                SELECT bsnsDivNm as 업무구분,
-                    prdctClsfcNoNm as 사업명, 
-                    rlDminsttNm as 수요기관, 
-                    orderInsttNm as 공고기관, 
-                    ofclNm as 담당자, 
-                    rcptDt as 진행일자, 
-                    printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS 배정예산금액(원화)
+            if statusType =="A":
+                sql_command = """
+                    SELECT bsnsDivNm as 업무구분,
+                        prdctClsfcNoNm as 사업명, 
+                        rlDminsttNm as 수요기관, 
+                        orderInsttNm as 공고기관, 
+                        ofclNm as 담당자, 
+                        rcptDt as 진행일자, 
+                        Status as 진행상태, 
+                        printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
+                        from HrcspSsstndrdInfoService
+                """
+            elif statusType == "Y":
+                sql_command = """
+                    SELECT bsnsDivNm as 업무구분,
+                        prdctClsfcNoNm as 사업명, 
+                        rlDminsttNm as 수요기관, 
+                        orderInsttNm as 공고기관, 
+                        ofclNm as 담당자, 
+                        rcptDt as 진행일자, 
+                        Status as 진행상태, 
+                        printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
                     from HrcspSsstndrdInfoService
-            """
+                    where Status != '마감'
+                """
             sheet_name="사전규격"
 
         cursor = connection.cursor()
@@ -98,12 +113,6 @@ class Sqlite:
         
         # 컬럼명 포함 데이터프레임 생성
         col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
-        # df = pd.DataFrame(data, columns=col_names)
-        # df = pd.DataFrame(data)
-
-        # # 데이터프레임 출력
-        # print("DataFrame 출력:")
-        # print(df)
 
         # pandas 데이터프레임으로 변환
         df_new = pd.DataFrame(data,columns=col_names)
@@ -128,12 +137,8 @@ class Sqlite:
         # Concatenate the existing and new DataFrames
         updated_df = pd.concat([existing_df, df_new], ignore_index=True)
         with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            updated_df.to_excel(writer, sheet_name='사전규격', index=False)
+            updated_df.to_excel(writer, sheet_name=sheet_name, index=False)
         print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
-        
-        # # Excel 파일로 저장 (openpyxl 엔진 사용)
-        # df.to_excel(rf"{savePath}\{filename}", index=False, engine='openpyxl', sheet_name=sheet_name)
-        # print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
 
         connection.close()
 
@@ -200,8 +205,8 @@ class HrcspSsstndrdInfoService:
             "inqryDiv": inqryDiv,  # 조회구분
             "inqryBgnDt": inqryBgnDt,  # 조회시작일시
             "inqryEndDt": inqryEndDt,  # 조회종료일시
-            "bidNtceNm": bidNtceNm,  # 입찰공고명
-            "swBizObjYn": swBizObjYn,  # SW대상여부 - 무조건 대상(Y)
+            "prdctClsfcNoNm": bidNtceNm  # 입찰공고명
+            # "swBizObjYn": swBizObjYn,  # SW대상여부 - 무조건 대상(Y)
         }
 
         queryUrl = Util.SetqueryUrl(dict1)
@@ -210,7 +215,8 @@ class HrcspSsstndrdInfoService:
         
         
         while True:
-            url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
+
+            url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}type=xml"
             print(url)
             req = requests.get(url)
 
@@ -250,41 +256,11 @@ class HrcspSsstndrdInfoService:
                             datas.append(data)
                     Sqlite.Upsert(datas,type="2")
                             
-                            
-
-                            
-
-                    # # pandas 데이터프레임으로 변환
-                    # df_new = pd.DataFrame(data)
-
-                    # # 데이터프레임 출력
-                    # print("DataFrame 출력:")
-                    # file_path=rf"{savePath}\{filename}"
-                    # sheet_name = "사전규격"
-                    # try:
-                    #     # 기존 엑셀 파일에서 sheet_name 읽기
-                    #     existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
-                    # except FileNotFoundError:
-                    #     # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
-                    #     print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
-                    #     existing_df = pd.DataFrame()
-                    #     with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
-                    #         existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
-                    #     print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
-                    # except ValueError:
-                    #     # 지정된 시트가 없을 경우 빈 데이터프레임 생성
-                    #     print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
-                    #     existing_df = pd.DataFrame()
-                        
-                    # # Concatenate the existing and new DataFrames
-                    # updated_df = pd.concat([existing_df, df_new], ignore_index=True)
-                    # with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                    #     updated_df.to_excel(writer, sheet_name='사전규격', index=False)
 
                     pageNo += 1  # 페이지 번호 증가
                     # totalCount가 100 이하라면 반복 종료
                     if totalCount > totalCounts:
-                        totalCounts = totalCounts* pageNo
+                        totalCounts = 100 * pageNo
                     else:
                         break
                     
@@ -427,13 +403,15 @@ inputDate = datetime.now()
 startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
 endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
 
+bidNtceNms = ["구축", "유지보수", "유지관리"]
+
 # 문자열로 된 날짜를 datetime 객체로 변환
 start = datetime.strptime(startDate[:8], '%Y%m%d')
 end = datetime.strptime(endDate[:8], '%Y%m%d')
 
 # 한 달 단위로 날짜를 나누기
 current = start
-bidNtceNms = ["구축", "유지보수", "유지관리"]
+
 while current < end:
     next_month = current + relativedelta(months=1)
     if next_month > end:
@@ -447,17 +425,19 @@ while current < end:
     current = next_month
 
 savePath = input("저장 경로 입력 : ")
-# Sqlite.selectDB(savePath, type="1")
+if os.path.exists(savePath+"\\"+filename):
+    print ('기존 파일 삭제')
+    os.remove(savePath+"\\"+filename)
+Sqlite.selectDB(savePath, type="1")
 print ("입찰용역 완료 -----> 사전규격 진행")
 
 
-
-startDate2 = (inputDate).strftime('%Y%m%d') + "0000"
-endDate2 = (inputDate + relativedelta(days=7)).strftime('%Y%m%d') + "2359"
+startDate2 = (inputDate+ relativedelta(days=-7)).strftime('%Y%m%d') + "0000"
+endDate2 = (inputDate ).strftime('%Y%m%d') + "2359"
 statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
 for bidNtceNm in bidNtceNms:
     HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
-# Sqlite.selectDB(savePath, type="2")
+Sqlite.selectDB(savePath, type="2",statusType=statusType)
 input("수행 완료, any key press....")
 
 

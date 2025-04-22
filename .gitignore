@@ -1,1 +1,4 @@
-*.db
+Database/*.db
+build
+dist
+venv
