@@ -20,6 +20,9 @@ import sqlite3
 basicUrl = "http://apis.data.go.kr/1230000/"
 serivceKey = "D83pd0SOWqYWJX2N3uy5jJ4fmpcbCPFOZOQk2Yd7AncIEcHlvTph7S8SHUlhmLM9v1u1CcZGlZPnozhaAhyvuw%3D%3D"
 indstrytyCd = "1468" # 업종코드
+# Excel 파일로 저장
+filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
+
 
 class Util:
     def SetqueryUrl(params:dict = dict()):
@@ -78,8 +81,8 @@ class Sqlite:
         print(df)
 
         # Excel 파일로 저장 (openpyxl 엔진 사용)
-        filename = "나라장터-입찰공고용역조회_{}.xlsx".format(time.strftime("%Y%m%d"))
-        df.to_excel(rf"{savePath}\{filename}", index=False, engine='openpyxl')
+        # filename = "나라장터-입찰공고용역조회_{}.xlsx".format(time.strftime("%Y%m%d"))
+        df.to_excel(rf"{savePath}\{filename}", index=False, engine='openpyxl', sheet_name="입찰공고용역")
         print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
 
         connection.close()
@@ -113,7 +116,7 @@ class Sqlite:
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 사전규격정보서비스 '''
 
-    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y"):
+    def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
         '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
 
@@ -122,6 +125,9 @@ class HrcspSsstndrdInfoService:
             - 업무구분: 일반용역, 기술용역
             - 사업명: 구축, 유지관리, 유지보수
             - SW 대상: Y
+            - statusType => 진행상태 표시 방법 
+                 - A : 게시중, 마감 모두 표기
+                 - Y : 게시중만 표기
         '''
         selectApi = "getPublicPrcureThngInfoServcPPSSrch"
         dict1 = {
@@ -135,7 +141,8 @@ class HrcspSsstndrdInfoService:
         queryUrl = Util.SetqueryUrl(dict1)
         pageNo = 1  # 초기 페이지 번호 설정
         totalCounts = 100
-        data = []
+        
+        
         while True:
             url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}&type=xml"
             print(url)
@@ -145,7 +152,7 @@ class HrcspSsstndrdInfoService:
                 try:
                     # XML 파싱
                     root = ET.fromstring(req.text)
-                    
+                    data = []
                     totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
                     print(f"사전규격 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
 
@@ -163,39 +170,59 @@ class HrcspSsstndrdInfoService:
                             rcptDt = item.find('rcptDt').text if item.find('rcptDt') is not None else "N/A"  # 접수일자 -> 진행일자
                             asignBdgtAmt = item.find('asignBdgtAmt').text if item.find('asignBdgtAmt') is not None else "N/A"  # 배정 예산액
                             Status = Util.compare_with_time(opninRgstClseDt)
-                            if Status != "마감":
+                            if statusType == "Y": # 마감은 제외
+                                if Status != "마감":
+                                    data.append({
+                                        "업무구분": bsnsDivNm,
+                                        "사업명": prdctClsfcNoNm,
+                                        "수요기관": rlDminsttNm,
+                                        "공고기관": orderInsttNm,
+                                        "담당자명": ofclNm,
+                                        "진행일자": rcptDt,
+                                        "진행상태": Status,
+                                        "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
+                                    })
+                            elif statusType == "A":
                                 data.append({
-                                    "업무구분": bsnsDivNm,
-                                    "사업명": prdctClsfcNoNm,
-                                    "수요기관": rlDminsttNm,
-                                    "공고기관": orderInsttNm,
-                                    "담당자명": ofclNm,
-                                    "진행일자": rcptDt,
-                                    "진행상태": Status,
-                                    "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
-                                })
+                                        "업무구분": bsnsDivNm,
+                                        "사업명": prdctClsfcNoNm,
+                                        "수요기관": rlDminsttNm,
+                                        "공고기관": orderInsttNm,
+                                        "담당자명": ofclNm,
+                                        "진행일자": rcptDt,
+                                        "진행상태": Status,
+                                        "배정예산금액(원화)": f"{int(asignBdgtAmt):,}"
+                                    })
 
+                    # pandas 데이터프레임으로 변환
+                    df_new = pd.DataFrame(data)
+
+                    # 데이터프레임 출력
+                    print("DataFrame 출력:")
+                    file_path=rf"D:\iway\2025\기타\나라장터\{filename}"
+                    
+                    try:
+                        existing_df = pd.read_excel(file_path, sheet_name='사전규격')
+                    except FileNotFoundError:
+                        existing_df = pd.DataFrame() 
+                        existing_df.to_excel(file_path, sheet_name='사전규격', index=False, engine='openpyxl',)
                         
+                    # Concatenate the existing and new DataFrames
+                    updated_df = pd.concat([existing_df, df_new], ignore_index=True)
+                    with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                        updated_df.to_excel(writer, sheet_name='사전규격', index=False)
 
+
+                    # # df.to_excel(file_path, index=False, engine='openpyxl', sheet_name="사전규격")
+                    # print("데이터가 엑셀 파일로 저장되었습니다.")      
                     pageNo += 1  # 페이지 번호 증가
-                    print(totalCounts, len(data), pageNo)
+                    # print(totalCounts, len(PrcureThngInfo), pageNo)
                     # totalCount가 100 이하라면 반복 종료
-                    if (totalCount >= totalCounts):
-                        totalCounts = 100 * pageNo
+                    if totalCount > totalCounts:
+                        totalCounts = totalCounts* pageNo
                     else:
                         break
-
-                    # # pandas 데이터프레임으로 변환
-                    # df = pd.DataFrame(data)
-
-                    # # 데이터프레임 출력
-                    # print("DataFrame 출력:")
-                    # print(df)
-
-                    # # Excel 파일로 저장
-                    # filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
-                    # df.to_excel(rf"D:\iway\2025\기타\나라장터\{filename}", index=False, engine='openpyxl', sheet_name="사전규격")
-                    # print("데이터가 엑셀 파일로 저장되었습니다.")
+                    
 
                 except ET.ParseError as e:
                     print(f"XML 파싱 에러: {e}")
@@ -203,6 +230,9 @@ class HrcspSsstndrdInfoService:
                     print(f"다른 에러 발생: {e}")
             else:
                 print(f"요청 실패, 상태 코드: {req.status_code}")
+
+          
+        
 # endregion
 
 
@@ -366,7 +396,10 @@ class BidPublicInfoService:
     - sw 대상 : Y
 
 '''
-inqryBgnDt="202503150000"
-inqryEndDt="202504182359"
+inqryBgnDt="202504080000"
+inqryEndDt="202504152359"
 bidNtceNm = "구축"
-HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=inqryBgnDt,inqryEndDt=inqryEndDt,bidNtceNm=bidNtceNm)
+statusType = input("진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=inqryBgnDt,inqryEndDt=inqryEndDt,bidNtceNm=bidNtceNm, statusType=statusType)
+
+
