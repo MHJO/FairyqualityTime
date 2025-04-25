@@ -1,4 +1,4 @@
-import requests, os
+import requests, os, sys
 import json
 import pandas as pd
 import xml.etree.ElementTree as ET
@@ -7,6 +7,10 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
 
+from PyQt5 import uic
+from PyQt5.QtWidgets import QDialog,QApplication
+from PyQt5.QtCore import QDate
+from PyQt5.QtGui import QIcon
 
 """
     당신의 퇴근요정!
@@ -63,84 +67,89 @@ class Sqlite:
         connection.close()
 
     def selectDB(savePath, type="", statusType=""):
-        if type == "1":
-            connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
-            sql_command = """
-                SELECT srvceDivNm as 업무구분,
-                    ntceKindNm as 구분, 
-                    (bidNtceNo||'-'||bidNtceOrd) as 입찰공고번호, 
-                    bidNtceNm as 공고명,
-                    ntceInsttNm as 공고기관,
-                    dminsttNm as 수요기관, 
-                    (bidNtceDt ||'('||bidClseDt||')') as '게시일시(입찰마감일시)', 
-                    printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS 사업금액
-                    from BidPblancListInfoServcPPSSrch
-            """
-            sheet_name="입찰공고용역"
-
-        elif (type == "2"):
-            connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
-            if statusType =="A":
-                sql_command = """
-                    SELECT bsnsDivNm as 업무구분,
-                        prdctClsfcNoNm as 사업명, 
-                        rlDminsttNm as 수요기관, 
-                        orderInsttNm as 공고기관, 
-                        ofclNm as 담당자, 
-                        rcptDt as 진행일자, 
-                        Status as 진행상태, 
-                        printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
-                        from HrcspSsstndrdInfoService
-                """
-            elif statusType == "Y":
-                sql_command = """
-                    SELECT bsnsDivNm as 업무구분,
-                        prdctClsfcNoNm as 사업명, 
-                        rlDminsttNm as 수요기관, 
-                        orderInsttNm as 공고기관, 
-                        ofclNm as 담당자, 
-                        rcptDt as 진행일자, 
-                        Status as 진행상태, 
-                        printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
-                    from HrcspSsstndrdInfoService
-                    where Status != '마감'
-                """
-            sheet_name="사전규격"
-
-        cursor = connection.cursor()
-        print (sheet_name)
-        data = cursor.execute(sql_command)
-        
-        # 컬럼명 포함 데이터프레임 생성
-        col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
-
-        # pandas 데이터프레임으로 변환
-        df_new = pd.DataFrame(data,columns=col_names)
-
-        # 데이터프레임 출력
-        file_path=rf"{savePath}\{filename}"
         try:
-            # 기존 엑셀 파일에서 sheet_name 읽기
-            existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
-        except FileNotFoundError:
-            # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
-            print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
-            existing_df = pd.DataFrame()
-            with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
-                existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
-            print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
-        except ValueError:
-            # 지정된 시트가 없을 경우 빈 데이터프레임 생성
-            print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
-            existing_df = pd.DataFrame()
-            
-        # Concatenate the existing and new DataFrames
-        updated_df = pd.concat([existing_df, df_new], ignore_index=True)
-        with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            updated_df.to_excel(writer, sheet_name=sheet_name, index=False)
-        print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
+            if type == "1":
+                connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+                sql_command = """
+                    SELECT srvceDivNm as 업무구분,
+                        ntceKindNm as 구분, 
+                        (bidNtceNo||'-'||bidNtceOrd) as 입찰공고번호, 
+                        bidNtceNm as 공고명,
+                        ntceInsttNm as 공고기관,
+                        dminsttNm as 수요기관, 
+                        (bidNtceDt ||'('||bidClseDt||')') as '게시일시(입찰마감일시)', 
+                        printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS 사업금액
+                        from BidPblancListInfoServcPPSSrch
+                """
+                sheet_name="입찰공고용역"
 
-        connection.close()
+            elif (type == "2"):
+                connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
+                if statusType =="A":
+                    sql_command = """
+                        SELECT bsnsDivNm as 업무구분,
+                            prdctClsfcNoNm as 사업명, 
+                            rlDminsttNm as 수요기관, 
+                            orderInsttNm as 공고기관, 
+                            ofclNm as 담당자, 
+                            rcptDt as 진행일자, 
+                            Status as 진행상태, 
+                            printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
+                            from HrcspSsstndrdInfoService
+                    """
+                elif statusType == "Y":
+                    sql_command = """
+                        SELECT bsnsDivNm as 업무구분,
+                            prdctClsfcNoNm as 사업명, 
+                            rlDminsttNm as 수요기관, 
+                            orderInsttNm as 공고기관, 
+                            ofclNm as 담당자, 
+                            rcptDt as 진행일자, 
+                            Status as 진행상태, 
+                            printf('%,d', CAST(asignBdgtAmt AS INTEGER)) || '원' AS '배정예산금액(원화)'
+                        from HrcspSsstndrdInfoService
+                        where Status != '마감'
+                    """
+                sheet_name="사전규격"
+
+            cursor = connection.cursor()
+            print (sheet_name)
+            data = cursor.execute(sql_command)
+            
+            # 컬럼명 포함 데이터프레임 생성
+            col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
+
+            # pandas 데이터프레임으로 변환
+            df_new = pd.DataFrame(data,columns=col_names)
+
+            # 데이터프레임 출력
+            file_path=rf"{savePath}\{filename}"
+            try:
+                # 기존 엑셀 파일에서 sheet_name 읽기
+                existing_df = pd.read_excel(file_path, sheet_name=sheet_name)
+            except FileNotFoundError:
+                # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
+                print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
+                existing_df = pd.DataFrame()
+                with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                    existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
+            except ValueError:
+                # 지정된 시트가 없을 경우 빈 데이터프레임 생성
+                print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
+                existing_df = pd.DataFrame()
+                
+            # Concatenate the existing and new DataFrames
+            updated_df = pd.concat([existing_df, df_new], ignore_index=True)
+            with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                updated_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
+
+            connection.close()
+            return True
+        except Exception as e:
+            print (e.__str__)
+            return False
 
     def Upsert(parmas, type):
         try:
@@ -190,15 +199,6 @@ class HrcspSsstndrdInfoService:
     def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
         '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
-
-            - 검색유형: 사전규격공개
-            - 진행일자: 최근 일주일(ex: 4.8~4.15)
-            - 업무구분: 일반용역, 기술용역
-            - 사업명: 구축, 유지관리, 유지보수
-            - SW 대상: Y
-            - statusType => 진행상태 표시 방법 
-                 - A : 게시중, 마감 모두 표기
-                 - Y : 게시중만 표기
         '''
         selectApi = "getPublicPrcureThngInfoServcPPSSrch"
         dict1 = {
@@ -281,13 +281,7 @@ class HrcspSsstndrdInfoService:
 class BidPublicInfoService:
     '''
     나라장터 입찰공고정보서비스
-    
-    --- 검색조건 ---
-    -공고/개찰일자: 개찰일자, 현재 날짜로부터 3주 후부터~현재 날짜로부터 2개월 후 날짜까지
-    -업무구분: 일반용역, 기술용역, 기타, 민간
-    -업종: 1468 소프트웨어사업자
-    -공고명: 구축 / 유지관리 / 유지보수 (각각 검색)   
-    
+       
     '''
     global classNm
     classNm = "BidPublicInfoService"
@@ -388,57 +382,90 @@ startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
 endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
 
 print (inputDate)
-print (rf"{os.getcwd()}\Database\입찰공고.db")
-
-Sqlite.clearDB(type="1")
-Sqlite.clearDB(type="2")
-print ("DB 초기화")
+# print (rf"{os.getcwd()}\Database\입찰공고.db")
 
 
-
-
-
-# 기준 날짜 설정
-inputDate = datetime.now()
-startDate = (inputDate + relativedelta(weeks=3)).strftime('%Y%m%d') + "0000"
-endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d') + "2359"
-
-bidNtceNms = ["구축", "유지보수", "유지관리"]
-
-# 문자열로 된 날짜를 datetime 객체로 변환
-start = datetime.strptime(startDate[:8], '%Y%m%d')
-end = datetime.strptime(endDate[:8], '%Y%m%d')
-
-# 한 달 단위로 날짜를 나누기
-current = start
-
-while current < end:
-    next_month = current + relativedelta(months=1)
-    if next_month > end:
-        next_month = end  # endDate를 초과하지 않도록 조정
+class g2b_api(QDialog):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi(os.path.join(os.getcwd(), os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
+        
+        self.init()
+        self.initUi()
+        self.listener()
     
-    startDate1 =current.strftime('%Y%m%d')+ "0000"
-    endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
-    print(f"기간: {startDate1} ~ {endDate1}")
-    for bidNtceNm in bidNtceNms:
-        BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
-    current = next_month
+    def init(self):
+        Sqlite.clearDB(type="1")
+        Sqlite.clearDB(type="2")
+        print ("DB 초기화")
 
-savePath = input("저장 경로 입력 : ")
-if os.path.exists(savePath+"\\"+filename):
-    print ('기존 파일 삭제')
-    os.remove(savePath+"\\"+filename)
-Sqlite.selectDB(savePath, type="1")
-print ("입찰용역 완료 -----> 사전규격 진행")
+    def initUi(self):
+        self.setWindowTitle("5분 단축 - 당신의 퇴근요정!")
+        self.setWindowIcon(QIcon('fairy.ico'))
+
+        self.date_1.setDate(inputDate+ relativedelta(weeks=3))
+        self.date_2.setDate(inputDate + relativedelta(months=2))
+        self.date_3.setDate(inputDate+ relativedelta(days=-7))
+        self.date_4.setDate(inputDate)
+        self.rdo_N.setChecked(True)
+
+    def listener(self):
+        self.btnOk.clicked.connect(self.run)
+    
+    def run(self):
+        bidNtceNms = ["구축", "유지보수", "유지관리"]
+        # 문자열로 된 날짜를 datetime 객체로 변환
+        start = datetime.strptime(startDate[:8], '%Y%m%d')
+        end = datetime.strptime(endDate[:8], '%Y%m%d')
+
+        # 한 달 단위로 날짜를 나누기
+        current = start
+
+        while current < end:
+            next_month = current + relativedelta(months=1)
+            if next_month > end:
+                next_month = end  # endDate를 초과하지 않도록 조정
+            
+            startDate1 =current.strftime('%Y%m%d')+ "0000"
+            endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
+            print(f"기간: {startDate1} ~ {endDate1}")
+            for bidNtceNm in bidNtceNms:
+                BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
+            current = next_month
+
+        # savePath = input("저장 경로 입력 : ")
+        savePath = self.txt_savePath.text()
+        if os.path.exists(savePath+"\\"+filename):
+            os.remove(savePath+"\\"+filename)
+        selectDB1 = Sqlite.selectDB(savePath, type="1")
+        if selectDB1 == True:
+            print ("입찰용역 완료 -----> 사전규격 진행")
+            self.progressBar.setValue(50)
+
+            startDate2 = (inputDate+ relativedelta(days=-7)).strftime('%Y%m%d') + "0000"
+            endDate2 = (inputDate ).strftime('%Y%m%d') + "2359"
+            statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+            for bidNtceNm in bidNtceNms:
+                HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
+            selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType)
+            if selectDB2 == True:
+                input("수행 완료, any key press....")
+                self.progressBar.setValue(100)
 
 
-startDate2 = (inputDate+ relativedelta(days=-7)).strftime('%Y%m%d') + "0000"
-endDate2 = (inputDate ).strftime('%Y%m%d') + "2359"
-statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
-for bidNtceNm in bidNtceNms:
-    HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
-Sqlite.selectDB(savePath, type="2",statusType=statusType)
-input("수행 완료, any key press....")
+
+    
+
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = g2b_api()
+    window.show()
+    sys.exit(app.exec_())
+
+
+
 
 
 
