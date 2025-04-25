@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 import sqlite3
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog,QApplication
+from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox
 from PyQt5.QtCore import QDate
 from PyQt5.QtGui import QIcon
 
@@ -414,6 +414,18 @@ class g2b_api(QDialog):
         self.btnOk.clicked.connect(self.run)
     
     def run(self):
+        savePath = self.txt_savePath.text()
+        if savePath =="":
+            QMessageBox.information(self, "알림","저장경로를 입력해주세요.")
+            return
+        else:
+            # 유효 경로인지 체크
+            if os.path.isdir(savePath) == True:
+                pass
+            else:
+                QMessageBox.warning(self, "알림", "경로가 존재하지 않습니다.\n경로를 확인해주세요.")
+                return
+
         bidNtceNms = ["구축", "유지보수", "유지관리"]
         # 문자열로 된 날짜를 datetime 객체로 변환
         start = datetime.strptime(startDate[:8], '%Y%m%d')
@@ -435,7 +447,7 @@ class g2b_api(QDialog):
             current = next_month
 
         # savePath = input("저장 경로 입력 : ")
-        savePath = self.txt_savePath.text()
+        
         if os.path.exists(savePath+"\\"+filename):
             os.remove(savePath+"\\"+filename)
         selectDB1 = Sqlite.selectDB(savePath, type="1")
