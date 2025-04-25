@@ -205,8 +205,8 @@ class HrcspSsstndrdInfoService:
             "inqryDiv": inqryDiv,  # 조회구분
             "inqryBgnDt": inqryBgnDt,  # 조회시작일시
             "inqryEndDt": inqryEndDt,  # 조회종료일시
-            "prdctClsfcNoNm": bidNtceNm  # 입찰공고명
-            # "swBizObjYn": swBizObjYn,  # SW대상여부 - 무조건 대상(Y)
+            "prdctClsfcNoNm": bidNtceNm,  # 입찰공고명
+            # "swBizObjYn": swBizObjYn  # SW대상여부 - 
         }
 
         queryUrl = Util.SetqueryUrl(dict1)
@@ -407,7 +407,8 @@ class g2b_api(QDialog):
         self.date_2.setDate(inputDate + relativedelta(months=2))
         self.date_3.setDate(inputDate+ relativedelta(days=-7))
         self.date_4.setDate(inputDate)
-        self.rdo_N.setChecked(True)
+        # self.rdo_N.setChecked(True)
+        self.rdo_StatusY.setChecked(True)
 
     def listener(self):
         self.btnOk.clicked.connect(self.run)
@@ -443,13 +444,19 @@ class g2b_api(QDialog):
             self.progressBar.setValue(50)
 
             startDate2 = (inputDate+ relativedelta(days=-7)).strftime('%Y%m%d') + "0000"
-            endDate2 = (inputDate ).strftime('%Y%m%d') + "2359"
-            statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+            endDate2 = (inputDate).strftime('%Y%m%d') + "2359"
+            # statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+            if self.rdo_StatusAll.isChecked() :
+                statusType = 'A'
+            elif self.rdo_StatusY.isChecked():
+                statusType = 'Y'
+
             for bidNtceNm in bidNtceNms:
                 HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm, statusType=statusType)
+
             selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType)
             if selectDB2 == True:
-                input("수행 완료, any key press....")
+                # input("수행 완료, any key press....")
                 self.progressBar.setValue(100)
 
 

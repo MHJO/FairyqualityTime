@@ -103,23 +103,6 @@
       <string>사전규격조회</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>조회기간</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QDateEdit" name="date_3">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="displayFormat">
-         <string>yyyy-MM-dd</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="2">
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -140,6 +123,50 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>조회기간</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDateEdit" name="date_3">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="displayFormat">
+         <string>yyyy-MM-dd</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QRadioButton" name="rdo_Y">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Y</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="4">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2" colspan="2">
+       <widget class="QRadioButton" name="rdo_N">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>N</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
@@ -147,24 +174,24 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QRadioButton" name="rdo_Y">
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_9">
         <property name="text">
-         <string>Y</string>
+         <string>진행상태</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2" colspan="2">
-       <widget class="QRadioButton" name="rdo_N">
+      <item row="2" column="1">
+       <widget class="QRadioButton" name="rdo_StatusAll">
         <property name="text">
-         <string>N</string>
+         <string>전체 표기(게시중, 마감)</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0" colspan="4">
-       <widget class="QLabel" name="label_4">
+      <item row="2" column="2">
+       <widget class="QRadioButton" name="rdo_StatusY">
         <property name="text">
-         <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
+         <string>게시중 만 표기</string>
         </property>
        </widget>
       </item>
