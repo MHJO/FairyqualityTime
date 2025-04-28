@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
+import configparser
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox
@@ -18,12 +19,20 @@ from PyQt5.QtGui import QIcon
     나라장터 api 활용 엑셀 시트 저장
 """
 
+properies = configparser.ConfigParser(interpolation=None)
+configPath =rf"{os.getcwd()}\config.ini"
+properies.read(configPath, encoding='utf-8')
+
+user = properies['user']
+
 
 
 # API 변수 정의 
 basicUrl = "http://apis.data.go.kr/1230000/"
-serivceKey = "D83pd0SOWqYWJX2N3uy5jJ4fmpcbCPFOZOQk2Yd7AncIEcHlvTph7S8SHUlhmLM9v1u1CcZGlZPnozhaAhyvuw%3D%3D"
-indstrytyCd = "1468" # 업종코드
+# serivceKey = "D83pd0SOWqYWJX2N3uy5jJ4fmpcbCPFOZOQk2Yd7AncIEcHlvTph7S8SHUlhmLM9v1u1CcZGlZPnozhaAhyvuw%3D%3D"
+serivceKey = user["apikey"]
+# indstrytyCd = "1468" # 업종코드
+indstrytyCd = user["indstrytyCd"]
 # Excel 파일로 저장
 filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
 
@@ -409,11 +418,16 @@ class g2b_api(QDialog):
         self.date_4.setDate(inputDate)
         # self.rdo_N.setChecked(True)
         self.rdo_StatusY.setChecked(True)
+        self.txt_savePath.setText(user["savePath"])
 
     def listener(self):
         self.btnOk.clicked.connect(self.run)
     
     def run(self):
+        properies["user"]["savePath"] = self.txt_savePath.text()
+        with open(configPath, 'w', encoding='utf-8') as configfile:
+            properies.write(configfile)
+        
         savePath = self.txt_savePath.text()
         if savePath =="":
             QMessageBox.information(self, "알림","저장경로를 입력해주세요.")
@@ -433,7 +447,7 @@ class g2b_api(QDialog):
 
         # 한 달 단위로 날짜를 나누기
         current = start
-
+        self.progressBar.setValue(10)
         while current < end:
             next_month = current + relativedelta(months=1)
             if next_month > end:
