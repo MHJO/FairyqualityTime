@@ -21,18 +21,19 @@ from PyQt5.QtGui import QIcon
 
 properies = configparser.ConfigParser(interpolation=None)
 configPath =rf"{os.getcwd()}\config.ini"
+print (configPath)
 properies.read(configPath, encoding='utf-8')
 
-user = properies['user']
+datagov = properies['datagov']
 
 
 
 # API 변수 정의 
 basicUrl = "http://apis.data.go.kr/1230000/"
 # serivceKey = "D83pd0SOWqYWJX2N3uy5jJ4fmpcbCPFOZOQk2Yd7AncIEcHlvTph7S8SHUlhmLM9v1u1CcZGlZPnozhaAhyvuw%3D%3D"
-serivceKey = user["apikey"]
+serivceKey = datagov["apikey"]
 # indstrytyCd = "1468" # 업종코드
-indstrytyCd = user["indstrytyCd"]
+indstrytyCd = datagov["indstrytyCd"]
 # Excel 파일로 저장
 filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
 
@@ -57,13 +58,12 @@ class Util:
     
 class Sqlite:
     def clearDB(type):
+        connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
         if type =="1":
-            connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
             sql_command = """
                 DELETE FROM BidPblancListInfoServcPPSSrch
             """
         elif (type =="2"):
-            connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
             sql_command = """
                 DELETE FROM HrcspSsstndrdInfoService
             """
@@ -77,8 +77,9 @@ class Sqlite:
 
     def selectDB(savePath, type="", statusType=""):
         try:
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
             if type == "1":
-                connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+                
                 sql_command = """
                     SELECT srvceDivNm as 업무구분,
                         ntceKindNm as 구분, 
@@ -93,7 +94,6 @@ class Sqlite:
                 sheet_name="입찰공고용역"
 
             elif (type == "2"):
-                connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
                 if statusType =="A":
                     sql_command = """
                         SELECT bsnsDivNm as 업무구분,
@@ -162,10 +162,11 @@ class Sqlite:
 
     def Upsert(parmas, type):
         try:
-            if type =="1":
-                connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
-            elif type =="2":
-                connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
+            connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
+            # if type =="1":
+            #     connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
+            # elif type =="2":
+            #     connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
             cursor = connection.cursor()
             for i in range(len(parmas)):
                 if type =="1":
@@ -395,9 +396,9 @@ print (inputDate)
 
 
 class g2b_api(QDialog):
-    def __init__(self):
+    def __init__(self, parent =None):
         super().__init__()
-        uic.loadUi(os.path.join(os.getcwd(), os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
+        uic.loadUi(os.path.join(os.getcwd()+"/ui", os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
         
         self.init()
         self.initUi()
@@ -406,7 +407,7 @@ class g2b_api(QDialog):
     def init(self):
         Sqlite.clearDB(type="1")
         Sqlite.clearDB(type="2")
-        print ("DB 초기화")
+        # print ("DB 초기화")
 
     def initUi(self):
         self.setWindowTitle("5분 단축 - 당신의 퇴근요정!")
@@ -418,13 +419,13 @@ class g2b_api(QDialog):
         self.date_4.setDate(inputDate)
         # self.rdo_N.setChecked(True)
         self.rdo_StatusY.setChecked(True)
-        self.txt_savePath.setText(user["savePath"])
+        self.txt_savePath.setText(datagov["savePath"])
 
     def listener(self):
         self.btnOk.clicked.connect(self.run)
     
     def run(self):
-        properies["user"]["savePath"] = self.txt_savePath.text()
+        properies["datagov"]["savePath"] = self.txt_savePath.text()
         with open(configPath, 'w', encoding='utf-8') as configfile:
             properies.write(configfile)
         
