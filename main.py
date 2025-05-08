@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow,QApplication, QMessageBox, QDialog
 from PyQt5.QtCore import QTimer
 
 
-
+from modules.Login import Login
 from modules.g2b_api import g2b_api
 from modules.employeeInfo import employeeInfo
 from modules.Manage_vaction import Manage_vaction
@@ -36,8 +36,10 @@ class main(QMainWindow):
         self.timer = QTimer(self)
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
-      
-        # login = self.default_login()
+
+        self.defalut_setting()
+        login = self.default_login()
+
        
         
     def listener(self):
@@ -99,18 +101,29 @@ class main(QMainWindow):
     # endregion
 
     # 로그인 창
-    # def default_login(self):
-    #     login_widget = Login(self.frame)
-    #     login_widget.setGeometry(320, 210, self.frame.width(), self.frame.height())
-    #     login_widget.setParent(self.frame)
-    #     login_widget.login.connect(self.)
-    #     login_widget.show()
-    #     if :
-    #         result = login_widget.login()
-    #         if result == True:
-    #             self.clear_frame()
-    #             self.btn_1.show()
-    #             self.btn_2.show()
+    def default_login(self):
+        # 로그인 다이얼로그 실행 (모달)
+        login_widget = Login(self)
+        result = login_widget.exec_()  # 사용자가 다이얼로그를 닫을 때까지 블록됨
+        if result == QDialog.Accepted:
+            # 로그인 성공 시 메뉴바와 기타 버튼들을 보이도록 설정
+            self.menuBar().show()
+            self.btn_1.show()
+            self.btn_2.show()
+            self.btn_3.show()
+            self.btn_4.show()
+        else:
+            # 로그인 실패 시 프로그램 종료 또는 다른 로직 처리
+            QMessageBox.critical(self, "오류", "로그인에 실패하였습니다.")
+            self.close()
+
+    
+    def defalut_setting(self):
+        self.menubar.hide()
+        self.btn_1.hide()
+        self.btn_2.hide()
+        self.btn_3.hide()
+        self.btn_4.hide()
 
             
 
