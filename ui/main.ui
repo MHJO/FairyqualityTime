@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>70</y>
       <width>1021</width>
-      <height>611</height>
+      <height>551</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -82,6 +82,32 @@
      </property>
     </widget>
    </widget>
+   <widget class="QPushButton" name="btn_home">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>51</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../image/fairy.ico</normaloff>../image/fairy.ico</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>40</width>
+      <height>40</height>
+     </size>
+    </property>
+    <property name="flat">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -99,6 +125,8 @@
     <addaction name="action1"/>
     <addaction name="action2"/>
     <addaction name="action3"/>
+    <addaction name="separator"/>
+    <addaction name="actionexit"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -122,6 +150,11 @@
   <action name="action3">
    <property name="text">
     <string>휴가장부</string>
+   </property>
+  </action>
+  <action name="actionexit">
+   <property name="text">
+    <string>종료</string>
    </property>
   </action>
  </widget>

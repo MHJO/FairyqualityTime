@@ -78,8 +78,21 @@
      <x>10</x>
      <y>150</y>
      <width>891</width>
-     <height>371</height>
+     <height>351</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btn_out">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>510</y>
+     <width>100</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>엑셀 내보내기</string>
    </property>
   </widget>
  </widget>

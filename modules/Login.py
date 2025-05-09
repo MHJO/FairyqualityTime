@@ -24,8 +24,8 @@ class Login(QDialog):
     
     def init(self):
         # 테스트용 기본 계정 설정
-        self.txtAccount.setText("admin")
-        self.txtPwd.setText("admin")
+        self.txtAccount.setText("admin@i-way.co.kr")
+        self.txtPwd.setText("23001")
 
     def listener(self):
         self.btnLogin.clicked.connect(self.handle_login)

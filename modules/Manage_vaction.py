@@ -34,8 +34,11 @@ class Manage_vaction(QWidget):
 
     def listener(self):
         self.btn_search.clicked.connect(self.search_db)
+        self.btn_out.clicked.connect(self.output_excel)
 
-    
+    def output_excel(self):
+        # 테이블 내용 엑셀 내보내기
+        ...
     
     def table_setting(self):
         init_sql = '''
@@ -49,7 +52,6 @@ class Manage_vaction(QWidget):
             FROM TB_employee e
             LEFT JOIN TB_employee_leave_history lh ON e.employee_id = lh.employee_id
             WHERE lh.history_id is not NULL 
-            GROUP BY e.employee_id
         '''
         result = self.db1.execute_query(init_sql)
         column_names = [col[0] for col in self.db1.cursor.description]

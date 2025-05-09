@@ -3,7 +3,7 @@ from datetime import datetime
 import configparser
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QMainWindow,QApplication, QMessageBox, QDialog
+from PyQt5.QtWidgets import QMainWindow,QApplication, QMessageBox, QDialog, QPushButton
 from PyQt5.QtCore import QTimer
 
 
@@ -43,6 +43,7 @@ class main(QMainWindow):
        
         
     def listener(self):
+        self.btn_home.clicked.connect(self.home_clear)
         self.action1.triggered.connect(self.load_g2b)
         self.action2.triggered.connect(self.load_employeeInfo)
         self.action3.triggered.connect(self.load_vacation)
@@ -60,13 +61,16 @@ class main(QMainWindow):
 
         self.statusbar.showMessage(time_msg)
 
+    def home_clear(self):
+        self.clear_frame(type=2)  # 기존 UI 삭제
+
 
     # region [g2b 불러오기]
     def load_g2b(self):
         self.clear_frame()
         g2b_dialog = g2b_api(self.frame)  # 부모를 QFrame으로 설정
-        # g2b_dialog.setGeometry(0, 0, self.frame.width(), self.frame.height())  # QFrame 크기 맞춤
-        g2b_dialog.setGeometry(0, 0, 608, 290)  
+        g2b_dialog.setGeometry(0, 0, self.frame.width(), self.frame.height())  # QFrame 크기 맞춤
+        # g2b_dialog.setGeometry(0, 0, 608, 290)  
         g2b_dialog.setParent(self.frame)  # QFrame 내부에 직접 추가
         g2b_dialog.show()
 
@@ -127,10 +131,28 @@ class main(QMainWindow):
 
             
 
-    def clear_frame(self):
-        # self.frame 내부의 모든 자식 위젯 삭제
-        for child in self.frame.children():
-            child.deleteLater()
+    def clear_frame(self, type=1):
+        if type == 1:
+            # self.frame 내부의 모든 자식 위젯 삭제
+            for child in self.frame.children():
+                child.deleteLater()
+        else:
+            # self.frame 내부의 모든 자식 위젯 삭제
+            for child in self.frame.children():
+                if isinstance(child, QPushButton):  # QPushButton은 삭제하지 않음
+                    continue
+                child.deleteLater()
+
+            # 레이아웃 초기화 (필요한 경우)
+            layout = self.frame.layout()
+            if layout:
+                while layout.count():
+                    item = layout.takeAt(0)
+                    widget = item.widget()
+                    if widget:
+                        widget.deleteLater()
+
+    
 
     
     def closeEvent(self, QCloseEvent):
