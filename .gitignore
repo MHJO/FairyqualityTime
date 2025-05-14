@@ -2,3 +2,4 @@ Database/*.db
 build
 dist
 venv
+modules/__pycache__/*.pyc

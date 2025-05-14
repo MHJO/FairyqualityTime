@@ -1,11 +1,11 @@
 import os, sys
 from PyQt5 import uic
 from PyQt5.QtCore import QDate
-from PyQt5.QtWidgets import QWidget,QApplication, QMessageBox, QTableWidgetItem,QTableWidget
+from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox, QTableWidgetItem,QTableWidget
 
 from modules.SQLiteSingleton import SQLiteSingleton
 
-class Manage_vaction(QWidget):
+class Manage_vaction(QDialog):
     def __init__(self, parent =None):
         super().__init__()
         uic.loadUi(os.path.join(os.getcwd()+"/ui", os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
@@ -38,7 +38,8 @@ class Manage_vaction(QWidget):
 
     def output_excel(self):
         # 테이블 내용 엑셀 내보내기
-        ...
+        print ("output_ excel")
+        
     
     def table_setting(self):
         init_sql = '''

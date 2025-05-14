@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>873</width>
-    <height>314</height>
+    <height>384</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>10</y>
+     <y>90</y>
      <width>851</width>
      <height>291</height>
     </rect>
@@ -30,9 +30,12 @@
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="gb_1">
       <property name="title">
        <string>입찰용역공고조회</string>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
@@ -52,6 +55,9 @@
          </property>
          <property name="displayFormat">
           <string>yyyy-MM-dd</string>
+         </property>
+         <property name="timeSpec">
+          <enum>Qt::LocalTime</enum>
          </property>
         </widget>
        </item>
@@ -86,40 +92,16 @@
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="gb_2">
       <property name="title">
        <string>사전규격조회</string>
       </property>
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>~</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="3">
         <widget class="QDateEdit" name="date_4">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="displayFormat">
-          <string>yyyy-MM-dd</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>조회기간</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QDateEdit" name="date_3">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -131,27 +113,10 @@
        <item row="1" column="1">
         <widget class="QRadioButton" name="rdo_Y">
          <property name="enabled">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="text">
           <string>Y</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="4">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2" colspan="2">
-        <widget class="QRadioButton" name="rdo_N">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>N</string>
          </property>
         </widget>
        </item>
@@ -169,6 +134,23 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>~</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>조회기간</string>
+         </property>
+        </widget>
+       </item>
        <item row="2" column="1">
         <widget class="QRadioButton" name="rdo_StatusAll">
          <property name="text">
@@ -176,10 +158,37 @@
          </property>
         </widget>
        </item>
+       <item row="1" column="2" colspan="2">
+        <widget class="QRadioButton" name="rdo_N">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>N</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QDateEdit" name="date_3">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="displayFormat">
+          <string>yyyy-MM-dd</string>
+         </property>
+        </widget>
+       </item>
        <item row="2" column="2">
         <widget class="QRadioButton" name="rdo_StatusY">
          <property name="text">
           <string>게시중 만 표기</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="4">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
          </property>
         </widget>
        </item>
@@ -225,10 +234,63 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QCheckBox" name="chk_alert">
+         <property name="text">
+          <string>알림</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>20</y>
+     <width>56</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>업종코드</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="txt_code">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>10</y>
+     <width>113</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_11">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>50</y>
+     <width>56</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>검색어</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="txt_keyword">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>50</y>
+     <width>300</width>
+     <height>20</height>
+    </rect>
+   </property>
   </widget>
  </widget>
  <resources/>

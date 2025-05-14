@@ -3,9 +3,9 @@ from datetime import datetime
 import configparser
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QMainWindow,QApplication, QMessageBox, QDialog, QPushButton
+from PyQt5.QtWidgets import QMainWindow,QApplication, QMessageBox, QDialog, QPushButton, QWidget
 from PyQt5.QtCore import QTimer
-
+from PyQt5.QtGui import QIcon
 
 from modules.Login import Login
 from modules.g2b_api import g2b_api
@@ -31,14 +31,15 @@ class main(QMainWindow):
     def init_ui(self):
         # self.setWindowTitle(f"도우미 요정 - {user['id']} ") # 계정 생기면 작동
         self.setWindowTitle(f"업무 도우미") # 계정 생기면 작동
+        self.setWindowIcon(QIcon('fairy.ico'))
 
         # self.statusbar.showMessage(str(datetime.today().strftime("%Y-%m-%d")))
         self.timer = QTimer(self)
         self.timer.start(1000)
         self.timer.timeout.connect(self.timeout)
 
-        self.defalut_setting()
-        login = self.default_login()
+        # self.defalut_setting()
+        # login = self.default_login()
 
        
         
@@ -84,7 +85,6 @@ class main(QMainWindow):
     # region [사원조회]
     def load_employeeInfo(self):
         self.clear_frame()
-        # QMessageBox.information(self, "알림","휴가장부 예정")
         employeeInfo_dialog = employeeInfo(self.frame)  # 부모를 QFrame으로 설정
         employeeInfo_dialog.setGeometry(0, 0, self.frame.width(), self.frame.height())  # QFrame 크기 맞춤
         
@@ -132,25 +132,42 @@ class main(QMainWindow):
             
 
     def clear_frame(self, type=1):
-        if type == 1:
-            # self.frame 내부의 모든 자식 위젯 삭제
-            for child in self.frame.children():
-                child.deleteLater()
-        else:
-            # self.frame 내부의 모든 자식 위젯 삭제
-            for child in self.frame.children():
-                if isinstance(child, QPushButton):  # QPushButton은 삭제하지 않음
-                    continue
-                child.deleteLater()
+        for child in self.frame.children():
+            
+            # 만약 QMainWindow의 인스턴스라면 닫고, 그 외는 단순히 보이게 처리
+            if isinstance(child, QDialog):
+                child.close()
+            else:
+                if type == 1:
+                    child.hide()
+                elif type ==2:
+                    child.show()
 
-            # 레이아웃 초기화 (필요한 경우)
-            layout = self.frame.layout()
-            if layout:
-                while layout.count():
-                    item = layout.takeAt(0)
-                    widget = item.widget()
-                    if widget:
-                        widget.deleteLater()
+        # if type == 1:
+        #     for child in self.frame.children():
+        #         child.hide() # 지우는 게 아니고 숨김
+        # elif type == 2:
+        #     for child in self.frame.children():
+        #         child.show()  # 다시 보이게 함
+        # if type == 1:
+        #     # self.frame 내부의 모든 자식 위젯 삭제
+        #     for child in self.frame.children():
+        #         child.deleteLater()
+        # else:
+        #     # self.frame 내부의 모든 자식 위젯 삭제
+        #     for child in self.frame.children():
+        #         if isinstance(child, QPushButton):  # QPushButton은 삭제하지 않음
+        #             continue
+        #         child.deleteLater()
+
+        #     # 레이아웃 초기화 (필요한 경우)
+        #     layout = self.frame.layout()
+        #     if layout:
+        #         while layout.count():
+        #             item = layout.takeAt(0)
+        #             widget = item.widget()
+        #             if widget:
+        #                 widget.deleteLater()
 
     
 

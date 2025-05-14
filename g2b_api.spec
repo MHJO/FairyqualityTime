@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['g2b_api.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('config.ini','.'),
+    ('fairy.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -15,6 +15,7 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
+
 
 exe = EXE(
     pyz,
@@ -32,7 +33,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='fairy.ico'
 )
 coll = COLLECT(
     exe,

@@ -1,11 +1,11 @@
 import os, sys
 from PyQt5 import uic
 from PyQt5.QtCore import QDate
-from PyQt5.QtWidgets import QWidget,QApplication, QMessageBox, QTableWidgetItem,QTableWidget
+from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox, QTableWidgetItem,QTableWidget
 
 from modules.SQLiteSingleton import SQLiteSingleton
 
-class employeeInfo(QWidget):
+class employeeInfo(QDialog):
     
 
     def __init__(self, parent =None):
