@@ -155,7 +155,7 @@ class Sqlite:
 
             connection.close()
             if alert =="Y":
-                telegram_alert(file_path, caption=f"나라장터_입찰공고용역, 사전규격 전달드립니다.")
+                telegram_alert(file_path, caption=f"나라장터_입찰공고용역, 사전규격({len(updated_df)}) 전달드립니다.")
 
             return True
         except Exception as e:
