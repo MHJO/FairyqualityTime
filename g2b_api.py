@@ -3,10 +3,13 @@ import json
 import pandas as pd
 import xml.etree.ElementTree as ET
 import time
+import schedule
+# from modules import util
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
 import configparser
+from modules import logger
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox
@@ -36,7 +39,7 @@ indstrytyCd = datagov["indstrytyCd"]  # 업종코드
 
 # Excel 파일로 저장
 filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
-
+sheets = []
 
 class Util:
     def SetqueryUrl(params:dict = dict()):
@@ -55,28 +58,25 @@ class Util:
             return "게시중"
         else:
             return "마감"
-    
-class Sqlite:
-    def clearDB(type):
-        connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
-        if type =="1":
-            sql_command = """
-                DELETE FROM BidPblancListInfoServcPPSSrch
-            """
-        elif (type =="2"):
-            sql_command = """
-                DELETE FROM HrcspSsstndrdInfoService
-            """
-        cursor = connection.cursor()
-        
-        cursor.execute(sql_command)
-        cursor.fetchall()
-        connection.commit()
 
+# region [sqlite] 
+class Sqlite:
+    def clearDB():
+        # DB 내용물 초기화
+        connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
+        
+        sql_commands = ["DELETE FROM BidPblancListInfoServcPPSSrch",
+                       "DELETE FROM HrcspSsstndrdInfoService",
+                       "DELETE FROM OrderPlanSttusListServcPPSSrch"]
+        cursor = connection.cursor()
+        for sql_command in sql_commands:
+            cursor.execute(sql_command)
+        connection.commit()
         connection.close()
 
     def selectDB(savePath, type="", statusType="", alert="N"):
         try:
+            
             connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
             if type == "1":
                 sql_command = """
@@ -91,6 +91,7 @@ class Sqlite:
                         from BidPblancListInfoServcPPSSrch
                 """
                 sheet_name="입찰공고용역"
+                sheets.append(sheet_name)
 
             elif (type == "2"):
                 if statusType =="A":
@@ -119,6 +120,17 @@ class Sqlite:
                         where Status != '마감'
                     """
                 sheet_name="사전규격"
+                sheets.append(sheet_name)
+            elif type == "3":
+                sql_command = """
+                    select bizNm as 사업명,
+                        orderInsttNm as 수요기관,
+                        nticeDt as 게시일시,
+                        printf('%,d', CAST(sumOrderAmt AS INTEGER)) as '합계발주금액(원화)'
+                    from OrderPlanSttusListServcPPSSrch
+                """
+                sheet_name="발주계획"
+                sheets.append(sheet_name)
 
             cursor = connection.cursor()
             print (sheet_name)
@@ -154,21 +166,19 @@ class Sqlite:
             print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
 
             connection.close()
+
             if alert =="Y":
-                telegram_alert(file_path, caption=f"나라장터_입찰공고용역, 사전규격({len(updated_df)}) 전달드립니다.")
+                print(sheets)
+                telegram_alert(file_path, caption=f"나라장터 조회({sheets})파일 전달드립니다.")
 
             return True
         except Exception as e:
-            print (e.__str__)
+            logger.log(e.__str__())
             return False
 
     def Upsert(parmas, type):
         try:
             connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
-            # if type =="1":
-            #     connection = sqlite3.connect(rf"{os.getcwd()}\Database\입찰공고.db")
-            # elif type =="2":
-            #     connection = sqlite3.connect(rf"{os.getcwd()}\Database\사전규격.db")
             cursor = connection.cursor()
             for i in range(len(parmas)):
                 if type =="1":
@@ -195,6 +205,16 @@ class Sqlite:
                         AND orderInsttNm="{parmas[i][3]}" AND rcptDt="{parmas[i][5]}"
                         )
                     '''
+                elif type =="3":
+                    sql_command = f'''
+                        INSERT INTO OrderPlanSttusListServcPPSSrch (
+                            bizNm, orderInsttNm, nticeDt, sumOrderAmt
+                        )SELECT "{parmas[i][0]}", "{parmas[i][1]}", "{parmas[i][2]}", "{parmas[i][3]}"
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM OrderPlanSttusListServcPPSSrch
+                        WHERE bizNm="{parmas[i][0]}" AND orderInsttNm = "{parmas[i][1]}" AND nticeDt = "{parmas[i][2]}" 
+                        )
+                    '''
                 cursor.execute(sql_command)
                 cursor.fetchall()
                 connection.commit()
@@ -203,11 +223,12 @@ class Sqlite:
         except Exception as e:
             print (str(e))
 
+# endregion
 
-# region [사전규격정보서비스]
 class HrcspSsstndrdInfoService:
-    '''	조달청_나라장터 사전규격정보서비스 '''
-
+    '''	조달청_나라장터 발주서비스 '''
+    
+    # region [사전규격정보서비스]
     def getPublicPrcureThngInfoServcPPSSrch(inqryDiv="1", inqryBgnDt="", inqryEndDt="", bidNtceNm="", swBizObjYn="Y", statusType = ""):
         '''
             나라장터 검색조건에 의한 사전규격 용역 목록 조회
@@ -225,9 +246,7 @@ class HrcspSsstndrdInfoService:
         pageNo = 1  # 초기 페이지 번호 설정
         totalCounts = 100
         
-        
         while True:
-
             url = f"{basicUrl}ao/HrcspSsstndrdInfoService/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}type=xml"
             print(url)
             req = requests.get(url)
@@ -274,7 +293,6 @@ class HrcspSsstndrdInfoService:
                     if totalCount > totalCounts:
                         totalCounts = 100 * pageNo
                     else:
-                        # telegram_alert(f"사전규격 용역 목록 조회 : {bidNtceNm}, totalCount : {totalCount}")
                         break
                     
 
@@ -285,6 +303,91 @@ class HrcspSsstndrdInfoService:
             else:
                 print(f"요청 실패, 상태 코드: {req.status_code}")
 
+    # endregion
+
+    # region [나라장터 사전발주계획서비스 -  getOrderPlanSttusListServcPPSSrch]
+    def getOrderPlanSttusListServcPPSSrch(orderBgnYm="", orderEndYm="", inqryBgnDt="", inqryEndDt="", bidNtceNm=""):
+        '''
+            나라장터 사전발주계획서비스
+        
+        '''
+        # 필수 입력
+        serivceKey=datagov['apikey']
+        pageNo = 1
+        numOfRows = 100
+        selectApi = "getOrderPlanSttusListServcPPSSrch"
+        totalCounts = 100
+
+        params = dict()
+
+        gurl = f"{basicUrl}ao/OrderPlanSttusService/{selectApi}?"
+        params['serviceKey'] = serivceKey
+        params['pageNo'] = pageNo
+        params['numOfRows'] = numOfRows
+        params['type'] = "xml"
+        params['orderBgnYm'] = orderBgnYm #  발주시작년월
+        params['orderEndYm'] = orderEndYm # 발주종료년월
+        params['inqryBgnDt'] = inqryBgnDt # 조회시작일시
+        params['inqryEndDt'] = inqryEndDt # 조회종료일시
+        params['bizNm'] = bidNtceNm # 사업명명
+
+        param = ""
+        co = 1
+        for i in params.keys():
+            if co == 1:
+                param += f"{i}={params[i]}"
+            else:
+                param += f"&{i}={params[i]}"
+            co +=1
+        # print (param)
+        url = gurl + param        
+        
+        while True:
+            req = requests.get(url)
+            if req.status_code == 200:
+                root = ET.fromstring(req.text)
+                try:
+                    # XML 파싱
+                    root = ET.fromstring(req.text)
+                    totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
+                    print(f"발주계획 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
+                    datas = []
+                    print (len(datas))
+                    items = root.find('.//body/items')
+                    if items is not None:
+                        
+                        for item in items.findall('item'):
+                            data = []
+                            # 각 item 태그에서 추출할 데이터
+                            bizNm = item.find('bizNm').text if item.find('bizNm') is not None else "N/A"  # 사업명
+                            orderInsttNm = item.find('orderInsttNm').text if item.find('orderInsttNm') is not None else "N/A"  # 발주기관명
+                            nticeDt = item.find('nticeDt').text if item.find('nticeDt') is not None else "N/A"  # 게시일시
+                            sumOrderAmt = item.find('sumOrderAmt').text if item.find('sumOrderAmt') is not None else "N/A"  # 합계발주금액
+                            
+                            data.append(bizNm)
+                            data.append(orderInsttNm)
+                            data.append(nticeDt)
+                            data.append(sumOrderAmt)
+                            datas.append(data)
+                    Sqlite.Upsert(datas,type="3")
+                            
+
+                    pageNo += 1  # 페이지 번호 증가
+                    # totalCount가 100 이하라면 반복 종료
+                    if totalCount > totalCounts:
+                        totalCounts = 100 * pageNo
+                    else:
+                        break
+                    
+
+                except ET.ParseError as e:
+                    print(f"XML 파싱 에러: {e}")
+                except Exception as e:
+                    print(f"다른 에러 발생: {e}")
+            else:
+                print(f"요청 실패, 상태 코드: {req.status_code}")
+                return
+    # endregion
           
         
 # endregion
@@ -390,25 +493,41 @@ class BidPublicInfoService:
 # endregion
 
 
+    
+    
+
+
+        
+        
+
+
+
+
+# endregion
+
 inputDate = datetime.now()
-# startDate = (inputDate+ relativedelta(weeks=3)).strftime('%Y%m%d')+"0000"
-# endDate = (inputDate + relativedelta(months=2)).strftime('%Y%m%d')+"2359"
+
 # region [telegram 알림]
 def telegram_alert(file_path, caption=""):
-    token = "7312357814:AAHu04_PCkjMg2A-lQA2pAFxlsuCHp8fS6k"
-    chat_id = "-1002614264482"  # 채널 ID
-    url = f"https://api.telegram.org/bot{token}/sendDocument"
-    
-    data = {
-        "chat_id": chat_id,
-        "caption": caption  # 파일과 함께 첨부할 텍스트 (캡션)
-    }
-    
-    with open(file_path, "rb") as file:
-        files = {"document": file}
-        response = requests.post(url, data=data, files=files)
-    
-    # print(response.json())
+    try:
+        telegram_config=properies['telegram']
+        token = telegram_config['token']
+        chat_id = telegram_config['chatId']
+        
+        url = f"https://api.telegram.org/bot{token}/sendDocument"
+        
+        data = {
+            "chat_id": chat_id,
+            "caption": caption  # 파일과 함께 첨부할 텍스트 (캡션)
+        }
+        
+        with open(file_path, "rb") as file:
+            files = {"document": file}
+            response = requests.post(url, data=data, files=files)
+        
+        # print(response.json())
+    except Exception as e:
+        logger.log(e.__str__())
 # endregion
 
 
@@ -417,15 +536,13 @@ class g2b_api(QDialog):
     def __init__(self, parent =None):
         super().__init__()
         uic.loadUi(os.path.join(os.getcwd()+"/ui", os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
-        
+    
         self.init()
         self.initUi()
         self.listener()
     
     def init(self):
-        Sqlite.clearDB(type="1")
-        Sqlite.clearDB(type="2")
-        # print ("DB 초기화")
+        Sqlite.clearDB()
 
     def initUi(self):
         self.setWindowTitle("5분 단축 - 당신의 퇴근요정!")
@@ -435,112 +552,224 @@ class g2b_api(QDialog):
         self.date_2.setDate(inputDate + relativedelta(months=2))
         self.date_3.setDate(inputDate+ relativedelta(days=-7))
         self.date_4.setDate(inputDate)
+        
+        self.dt_month1.setDate(inputDate)
+        self.dt_month2.setDate(inputDate+ relativedelta(months=1))
+        self.date_5.setDate(inputDate)
+        self.rdo_1m.setChecked(True)
+        self.date_6.setDate(inputDate+ relativedelta(months=1))
+
         # self.rdo_N.setChecked(True)
         self.rdo_StatusY.setChecked(True)
         self.txt_savePath.setText(datagov["savePath"])
         self.txt_code.setText(indstrytyCd)
         self.txt_keyword.setText(datagov["keywords"])
 
+        self.lb_result.setText('대기중')
+        self.change_ui()
+
     def listener(self):
         self.btnOk.clicked.connect(self.run)
+        self.gb_auto.toggled.connect(self.change_ui)
+        self.btn_auto.clicked.connect(self.run_schedule)
+        self.btn_cancel.clicked.connect(self.cancel_schedule)
+        self.rdo_1m.toggled.connect(self.change_date6)
+        self.rdo_3m.toggled.connect(self.change_date6)
+        self.rdo_6m.toggled.connect(self.change_date6)
+        self.rdo_12m.toggled.connect(self.change_date6)
+
         
-    def run(self):
+    
+    def change_ui(self):
+        if (self.gb_auto.isChecked()):
+            self.btnOk.setEnabled(False)
+        else:
+            self.btnOk.setEnabled(True)
+
+    def change_date6(self):
+        if (self.rdo_1m.isChecked()):
+            self.date_6.setDate(inputDate+ relativedelta(months=1))
+        elif (self.rdo_3m.isChecked()):
+            self.date_6.setDate(inputDate+ relativedelta(months=3))
+        elif (self.rdo_6m.isChecked()):
+            self.date_6.setDate(inputDate+ relativedelta(months=6))
+        elif (self.rdo_12m.isChecked()):
+            self.date_6.setDate(inputDate+ relativedelta(months=12))
+
+    def reSettingConfig(self):
         properies["datagov"]["savePath"] = self.txt_savePath.text()
         properies["datagov"]["indstrytycd"] = self.txt_code.text()
         properies["datagov"]["keywords"] = self.txt_keyword.text()
         
         with open(configPath, 'w', encoding='utf-8') as configfile:
             properies.write(configfile)
+    
+    def defaultCheck(self, savePath):
         
-        savePath = self.txt_savePath.text()
         if savePath =="":
+            logger.log("저장경로를 입력해주세요.")
             QMessageBox.information(self, "알림","저장경로를 입력해주세요.")
             return
         else:
             # 유효 경로인지 체크
             if os.path.isdir(savePath) == True:
-                pass
+                # 유효경로이면 이전 파일은 삭제함
+                if os.path.exists(savePath+"\\"+filename):
+                    os.remove(savePath+"\\"+filename)
             else:
+                logger.log("경로가 존재하지 않습니다")
                 QMessageBox.warning(self, "알림", "경로가 존재하지 않습니다.\n경로를 확인해주세요.")
                 return
-
-        # bidNtceNms = ["구축", "유지보수", "유지관리"]
-
-        bidNtceNms = self.txt_keyword.text().split(',')
-
-        # 문자열로 된 날짜를 datetime 객체로 변환
         
-        # start = datetime.strptime(startDate[:8], '%Y%m%d')
-        # end = datetime.strptime(endDate[:8], '%Y%m%d')
-
-        start = datetime.strptime(self.date_1.text(),'%Y-%m-%d')
-        end = datetime.strptime(self.date_2.text(),'%Y-%m-%d')
-
-        # 한 달 단위로 날짜를 나누기
-        current = start
-        self.progressBar.setValue(10)
-        while current < end:
-            next_month = current + relativedelta(months=1)
-            if next_month > end:
-                next_month = end  # endDate를 초과하지 않도록 조정
-            
-            startDate1 =current.strftime('%Y%m%d')+ "0000"
-            endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
-            print(f"기간: {startDate1} ~ {endDate1}")
-            
-            for bidNtceNm in bidNtceNms:
-                BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
-            current = next_month
+    # 체크된 개수를 업데이트하는 메소드 작성 예시
+    def update_check_count(self):
+        # 체크 가능한 객체들을 리스트로 모읍니다.
+        check_widgets = [self.gb_1, self.gb_2, self.gb_3]
+        # 각 위젯의 체크 여부를 확인하여, 체크된 개수를 셉니다.
+        checked_count = sum(1 for widget in check_widgets if widget.isChecked())
         
-        if os.path.exists(savePath+"\\"+filename):
-            os.remove(savePath+"\\"+filename)
+        # 예를 들어, 총 3개 중 checked_count만큼 수행 상태를 표시합니다.
+        self.lb_result.setText("수행({}/{})".format(checked_count, len(check_widgets)))
 
-        try:
-            selectDB1 = Sqlite.selectDB(savePath, type="1", alert="N")
-            self.progressBar.setValue(50)
-        except Exception as e:
-            QMessageBox.warning(self, "알림", e.__str__)
-            return
-               
+    def run_schedule(self):
+        # schedule 작업 등록: 5초마다 message1 함수 실행
+        schedule.every(self.sb_cycle.value()).seconds.do(self.run) # 테스트용
+        schedule.run_pending()
 
-        try:
-            inputDate2 = datetime.strptime(self.date_3.text(),'%Y-%m-%d')
-            inputDate3 = datetime.strptime(self.date_4.text(),'%Y-%m-%d')
-            # startDate2 = (inputDate+ relativedelta(days=-7)).strftime('%Y%m%d') + "0000"
-            startDate2 = (inputDate2).strftime('%Y%m%d') + "0000"
-            endDate2 = (inputDate3).strftime('%Y%m%d') + "2359"
-            # statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
-            if self.rdo_StatusAll.isChecked() :
-                statusType = 'A'
-            elif self.rdo_StatusY.isChecked():
-                statusType = 'Y'
+    # 취소 버튼 클릭 시 QTimer 중지
+    def cancel_schedule(self):
+        self.timer.stop()
+        self.status_label.setText("스케줄 중지됨")
+        print("스케줄이 중지되었습니다.")
 
-            for bidNtceNm in bidNtceNms:
-                HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(
-                    inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm,
-                    swBizObjYn='Y',statusType=statusType)
 
-            if self.chk_alert.isChecked():
-                alertType = "Y"
-            else:
-                alertType = "N"
-            selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType, alert=alertType)
-            if selectDB2 == True:
-                self.progressBar.setValue(100)
+    def run(self):
+        self.reSettingConfig() # config.ini 파일 조정
+        savePath = self.txt_savePath.text()
+        self.defaultCheck(savePath)
+
+        bidNtceNms = self.txt_keyword.text().split(',') # 사업명 검색
+        self.lb_result.setText("수행 시작")
+        
+
+        if self.chk_alert.isChecked():
+            alertType = "Y"
+        else:
+            alertType = "N"
+
+        # region [입찰공고용역 수행]
+        if (self.gb_1.isChecked()):
+            self.lb_result.setText("입찰공고용역 조회 시작")
+            start = datetime.strptime(self.date_1.text(),'%Y-%m-%d')
+            end = datetime.strptime(self.date_2.text(),'%Y-%m-%d')
+
+            # 한 달 단위로 날짜를 나누기
+            current = start
+            while current < end:
+                next_month = current + relativedelta(months=1)
+                if next_month > end:
+                    next_month = end  # endDate를 초과하지 않도록 조정
                 
-        except Exception as e:
-            QMessageBox.warning(self, "알림", e.__str__)
+                startDate1 =current.strftime('%Y%m%d')+ "0000"
+                endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
+                print(f"기간: {startDate1} ~ {endDate1}")
+                pi += 5
+                for bidNtceNm in bidNtceNms:
+                    BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
+                current = next_month
+                
+                self.lb_result.setText("입찰공고용역 조회 완료")
+            try:
+                selectDB1 = Sqlite.selectDB(savePath, type="1", alert=alertType)
+                self.lb_result.setText("입찰공고용역 내보내기 완료")
+            except Exception as e:
+                logger.log(e.__str__())
+                return
+        # endregion
+
+        # region [사전규격격 수행]
+        if (self.gb_2.isChecked()):
+            print ("2-1")
+            self.lb_result.setText("사전규격 조회시작")
+            try:
+                inputDate2 = datetime.strptime(self.date_3.text(),'%Y-%m-%d')
+                inputDate3 = datetime.strptime(self.date_4.text(),'%Y-%m-%d')
+                startDate2 = (inputDate2).strftime('%Y%m%d') + "0000"
+                endDate2 = (inputDate3).strftime('%Y%m%d') + "2359"
+                # statusType = input("사전규격 진행상태 표기 방법 선택 ( A : 게시중, 마감 모두 표기, Y : 게시중만 표기) => ").upper()
+                if self.rdo_StatusAll.isChecked() :
+                    statusType = 'A'
+                elif self.rdo_StatusY.isChecked():
+                    statusType = 'Y'
+
+                for bidNtceNm in bidNtceNms:
+                    HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(
+                        inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm,
+                        swBizObjYn='Y',statusType=statusType)
+
+                
+                selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType, alert=alertType)
+                    
+            except Exception as e:
+                logger.log(e.__str__())
+                return
+        # endregion
+
+        # region [발주계획 수행]
+        if (self.gb_3.isChecked()):
+            print ("3-1")
+            orderBgnYm=(datetime.strptime(self.dt_month1.text(),'%Y-%m')).strftime('%Y%m')
+            orderEndYm=(datetime.strptime(self.dt_month2.text(),'%Y-%m')).strftime('%Y%m')
+            inqryBgnDt=datetime.strptime(self.date_5.text(),'%Y-%m-%d').strftime('%Y%m%d') + "0000"
+            inqryEndDt=datetime.strptime(self.date_6.text(),'%Y-%m-%d').strftime('%Y%m%d') + "2359"
+            
+            self.lb_result.setText("발주계획 조회시작")
+            
+
+            try:
+                print (orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt)
+                # for bidNtceNm in bidNtceNms:
+                #     HrcspSsstndrdInfoService.getOrderPlanSttusListServcPPSSrch(
+                #         orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt,bidNtceNm)
+                # selectDB3 = Sqlite.selectDB(savePath, type="3", alert=alertType)
+
+                self.lb_result.setText("발주계획 수행완료")
+            except Exception as e:
+                logger.log(e.__str__())
+                print (e.__str__())
+                return
+
+            
+        # endregion
+        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    logger.init(os.getcwd(), "MyApp")
     window = g2b_api()
     window.show()
     sys.exit(app.exec_())
 
 
 
+# import schedule
+# import keyboard
 
+# def message1():
+#     print (datetime.now())
+#     print("스케쥴 실행중...")
 
+# schedule.every(5).seconds.do(message1)
+    
+# # step4.스캐쥴 시작
+# print (datetime.now())
+# while True:
+#     schedule.run_pending()
+#     if keyboard.is_pressed('esc'):
+#             print("ESC 키가 눌려졌습니다. 프로그램을 종료합니다.")
+#             break
+#     time.sleep(1)  # CPU 사용률을 낮추기 위해 1초 대기
+    
 
 
 

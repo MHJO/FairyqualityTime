@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>873</width>
-    <height>384</height>
+    <width>671</width>
+    <height>680</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,10 +16,10 @@
   <widget class="QFrame" name="frame_2">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>90</y>
-     <width>851</width>
-     <height>291</height>
+     <x>20</x>
+     <y>230</y>
+     <width>586</width>
+     <height>411</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -29,40 +29,224 @@
     <enum>QFrame::Raised</enum>
    </property>
    <layout class="QGridLayout" name="gridLayout">
+    <item row="4" column="0">
+     <widget class="QLabel" name="lb_result">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QGroupBox" name="gb_2">
+      <property name="title">
+       <string>사전규격조회</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QFrame" name="frame_4">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>조회기간</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDateEdit" name="date_3">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="displayFormat">
+             <string>yyyy-MM-dd</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>~</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QDateEdit" name="date_4">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="displayFormat">
+             <string>yyyy-MM-dd</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>SW여부</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QRadioButton" name="rdo_Y">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2" colspan="2">
+           <widget class="QRadioButton" name="rdo_N">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>N</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>진행상태</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QRadioButton" name="rdo_StatusAll">
+            <property name="text">
+             <string>전체 표기(게시중, 마감)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QRadioButton" name="rdo_StatusY">
+            <property name="text">
+             <string>게시중 만 표기</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>결과 : 업무구분, 사업명, 수요기관, 공고기관, 담당자, 진행일지, 진행상태, 배정예산금액(원화)</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
     <item row="0" column="0">
      <widget class="QGroupBox" name="gb_1">
       <property name="title">
        <string>입찰용역공고조회</string>
       </property>
       <property name="checkable">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QFrame" name="frame_3">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>조회기간(개찰일시, 최대 3개월)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="date_1">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="currentSection">
+             <enum>QDateTimeEdit::YearSection</enum>
+            </property>
+            <property name="displayFormat">
+             <string>yyyy-MM-dd</string>
+            </property>
+            <property name="timeSpec">
+             <enum>Qt::LocalTime</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>~</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="date_2">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="displayFormat">
+             <string>yyyy-MM-dd</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_14">
          <property name="text">
-          <string>조회기간(개찰일시)</string>
+          <string>결과 : 업무구문, 구분, 입찰공고번호, 공고명, 공고기관, 수요기관, 게시일시(입찰마감일시), 사업금액</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QDateEdit" name="date_1">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="currentSection">
-          <enum>QDateTimeEdit::YearSection</enum>
-         </property>
-         <property name="displayFormat">
-          <string>yyyy-MM-dd</string>
-         </property>
-         <property name="timeSpec">
-          <enum>Qt::LocalTime</enum>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QGroupBox" name="gb_3">
+      <property name="title">
+       <string>발주계획현황조회</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="1" column="3">
+        <widget class="QDateEdit" name="date_6"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>진행일자</string>
          </property>
         </widget>
        </item>
        <item row="0" column="2">
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="label_12">
          <property name="text">
           <string>~</string>
          </property>
@@ -72,70 +256,31 @@
         </widget>
        </item>
        <item row="0" column="3">
-        <widget class="QDateEdit" name="date_2">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
+        <widget class="QDateEdit" name="dt_month2">
          <property name="displayFormat">
-          <string>yyyy-MM-dd</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="4">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QGroupBox" name="gb_2">
-      <property name="title">
-       <string>사전규격조회</string>
-      </property>
-      <property name="checkable">
-       <bool>false</bool>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="3">
-        <widget class="QDateEdit" name="date_4">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="displayFormat">
-          <string>yyyy-MM-dd</string>
+          <string>yyyy-MM</string>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QRadioButton" name="rdo_Y">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
+        <widget class="QDateEdit" name="date_5"/>
+       </item>
+       <item row="1" column="7">
+        <widget class="QRadioButton" name="rdo_12m">
          <property name="text">
-          <string>Y</string>
+          <string>12개월</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>SW여부</string>
+       <item row="0" column="1">
+        <widget class="QDateEdit" name="dt_month1">
+         <property name="displayFormat">
+          <string>yyyy-MM</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_9">
-         <property name="text">
-          <string>진행상태</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QLabel" name="label_6">
+       <item row="1" column="2">
+        <widget class="QLabel" name="label_13">
          <property name="text">
           <string>~</string>
          </property>
@@ -144,100 +289,38 @@
          </property>
         </widget>
        </item>
+       <item row="1" column="4">
+        <widget class="QRadioButton" name="rdo_1m">
+         <property name="text">
+          <string>1개월</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="6">
+        <widget class="QRadioButton" name="rdo_6m">
+         <property name="text">
+          <string>6개월</string>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="label_5">
+        <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>조회기간</string>
+          <string>발주시기</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
-        <widget class="QRadioButton" name="rdo_StatusAll">
+       <item row="1" column="5">
+        <widget class="QRadioButton" name="rdo_3m">
          <property name="text">
-          <string>전체 표기(게시중, 마감)</string>
+          <string>3개월</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="2" colspan="2">
-        <widget class="QRadioButton" name="rdo_N">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
+       <item row="2" column="0" colspan="3">
+        <widget class="QLabel" name="label_16">
          <property name="text">
-          <string>N</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QDateEdit" name="date_3">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="displayFormat">
-          <string>yyyy-MM-dd</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2">
-        <widget class="QRadioButton" name="rdo_StatusY">
-         <property name="text">
-          <string>게시중 만 표기</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="4">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>* 자동 검색 : 구축, 유지보수, 유지관리</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QProgressBar" name="progressBar">
-      <property name="value">
-       <number>0</number>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <property name="textVisible">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QFrame" name="frame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>저장경로</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="txt_savePath"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="btnOk">
-         <property name="text">
-          <string>실행</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="chk_alert">
-         <property name="text">
-          <string>알림</string>
+          <string>결과 : 사업명, 수요기관, 게시일자, 금액</string>
          </property>
         </widget>
        </item>
@@ -291,6 +374,151 @@
      <height>20</height>
     </rect>
    </property>
+  </widget>
+  <widget class="QFrame" name="frame">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>70</y>
+     <width>581</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <layout class="QGridLayout" name="gridLayout_5">
+    <item row="0" column="0" colspan="4">
+     <widget class="QGroupBox" name="gb_auto">
+      <property name="title">
+       <string>자동수행</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="sb_cycle">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>12</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="5">
+        <widget class="QPushButton" name="btn_cancel">
+         <property name="text">
+          <string>수행중지</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QFrame" name="frame_5">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_18">
+            <property name="text">
+             <string>활동시간</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeEdit" name="startTime">
+            <property name="currentSection">
+             <enum>QDateTimeEdit::HourSection</enum>
+            </property>
+            <property name="displayFormat">
+             <string>hh:mm</string>
+            </property>
+            <property name="time">
+             <time>
+              <hour>8</hour>
+              <minute>0</minute>
+              <second>0</second>
+             </time>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>~</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeEdit" name="EndTime">
+            <property name="displayFormat">
+             <string>hh:mm</string>
+            </property>
+            <property name="time">
+             <time>
+              <hour>18</hour>
+              <minute>0</minute>
+              <second>0</second>
+             </time>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="label_17">
+         <property name="text">
+          <string>알림주기(시간)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <widget class="QPushButton" name="btn_auto">
+         <property name="text">
+          <string>수행</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>저장경로</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="txt_savePath"/>
+    </item>
+    <item row="1" column="2">
+     <widget class="QPushButton" name="btnOk">
+      <property name="text">
+       <string>실행</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="3">
+     <widget class="QCheckBox" name="chk_alert">
+      <property name="text">
+       <string>알림</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>
