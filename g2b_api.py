@@ -544,6 +544,9 @@ class g2b_api(QDialog):
     def init(self):
         Sqlite.clearDB()
 
+        # 스케줄 작업을 돌릴 QTimer 변수 (초기에는 None)
+        self.timer = None
+
     def initUi(self):
         self.setWindowTitle("5분 단축 - 당신의 퇴근요정!")
         self.setWindowIcon(QIcon('fairy.ico'))
@@ -632,15 +635,25 @@ class g2b_api(QDialog):
         self.lb_result.setText("수행({}/{})".format(checked_count, len(check_widgets)))
 
     def run_schedule(self):
-        # schedule 작업 등록: 5초마다 message1 함수 실행
-        schedule.every(self.sb_cycle.value()).seconds.do(self.run) # 테스트용
-        schedule.run_pending()
-
-    # 취소 버튼 클릭 시 QTimer 중지
+        # 기존에 예약된 작업 초기화
+        schedule.clear()
+        interval = self.sb_cycle.value()  # btn_auto 클릭 시 sb_cycle의 최종값 사용
+        schedule.every(interval).seconds.do(self.run)
+        
+        # QTimer를 생성하여 schedule.run_pending()을 주기적으로 호출
+        if self.timer is None:
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(lambda: schedule.run_pending())
+        self.timer.start(1000)  # 1초마다 실행
+      
+        self.lb_result.setText("스케줄 실행 중...")
+        print(f"스케줄 시작됨: {interval}초 간격")
+    
     def cancel_schedule(self):
-        self.timer.stop()
-        self.status_label.setText("스케줄 중지됨")
-        print("스케줄이 중지되었습니다.")
+        if self.timer is not None:
+            self.timer.stop()
+            self.lb_result.setText("스케줄 중지됨")
+            print("스케줄이 중지되었습니다.")
 
 
     def run(self):
