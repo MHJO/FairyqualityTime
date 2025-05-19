@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>671</width>
-    <height>680</height>
+    <height>659</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
     <enum>QFrame::Raised</enum>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="4" column="0">
+    <item row="5" column="0">
      <widget class="QLabel" name="lb_result">
       <property name="text">
        <string/>
@@ -327,6 +327,13 @@
       </layout>
      </widget>
     </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_20">
+      <property name="text">
+       <string>* 조회 결과는 나라장터 검색 결과와 일부 차이가 있을 수 있습니다.</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QLabel" name="label_10">
@@ -391,6 +398,13 @@
     <enum>QFrame::Raised</enum>
    </property>
    <layout class="QGridLayout" name="gridLayout_5">
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>저장경로</string>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="0" colspan="4">
      <widget class="QGroupBox" name="gb_auto">
       <property name="title">
@@ -461,7 +475,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QTimeEdit" name="EndTime">
+           <widget class="QTimeEdit" name="endTime">
             <property name="displayFormat">
              <string>hh:mm</string>
             </property>
@@ -494,22 +508,15 @@
       </layout>
      </widget>
     </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_8">
-      <property name="text">
-       <string>저장경로</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="txt_savePath"/>
-    </item>
     <item row="1" column="2">
      <widget class="QPushButton" name="btnOk">
       <property name="text">
        <string>실행</string>
       </property>
      </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="txt_savePath"/>
     </item>
     <item row="1" column="3">
      <widget class="QCheckBox" name="chk_alert">

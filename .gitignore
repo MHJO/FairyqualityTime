@@ -3,3 +3,4 @@ build
 dist
 venv
 modules/__pycache__/*.pyc
+*.log

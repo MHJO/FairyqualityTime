@@ -40,6 +40,9 @@ indstrytyCd = datagov["indstrytyCd"]  # 업종코드
 # Excel 파일로 저장
 filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
 sheets = []
+counts = []
+rs_text=[]
+
 
 class Util:
     def SetqueryUrl(params:dict = dict()):
@@ -73,7 +76,7 @@ class Sqlite:
             cursor.execute(sql_command)
         connection.commit()
         connection.close()
-
+    
     def selectDB(savePath, type="", statusType="", alert="N"):
         try:
             
@@ -135,12 +138,21 @@ class Sqlite:
             cursor = connection.cursor()
             print (sheet_name)
             data = cursor.execute(sql_command)
+            result = data.fetchall()
+            count = len(result) 
+            counts.append(count)
+            print(f"조회된 행 개수: {count}")
+            
+            # print (result)
+            
+            rs_text.append(f"{sheet_name}({count})")
             
             # 컬럼명 포함 데이터프레임 생성
             col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
 
             # pandas 데이터프레임으로 변환
-            df_new = pd.DataFrame(data,columns=col_names)
+            df_new = pd.DataFrame(result,columns=col_names)
+            # print (df_new)
 
             # 데이터프레임 출력
             file_path=rf"{savePath}\{filename}"
@@ -166,10 +178,10 @@ class Sqlite:
             print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
 
             connection.close()
-
+            print (f"나라장터 조회({rs_text})")
             if alert =="Y":
                 print(sheets)
-                telegram_alert(file_path, caption=f"나라장터 조회({sheets})파일 전달드립니다.")
+                telegram_alert(file_path, caption=f"나라장터 조회({rs_text})")
 
             return True
         except Exception as e:
@@ -222,6 +234,7 @@ class Sqlite:
             connection.close()
         except Exception as e:
             print (str(e))
+            logger.log(e.__str__())
 
 # endregion
 
@@ -297,11 +310,15 @@ class HrcspSsstndrdInfoService:
                     
 
                 except ET.ParseError as e:
-                    print(f"XML 파싱 에러: {e}")
+                    err = (f"XML 파싱 에러: {e}")
+                    logger.log(err)
                 except Exception as e:
-                    print(f"다른 에러 발생: {e}")
+                    err = (f"다른 에러 발생: {e}")
+                    logger.log(err)
             else:
-                print(f"요청 실패, 상태 코드: {req.status_code}")
+                err = (f"요청 실패, 상태 코드: {req.status_code}")
+                logger.log(err)
+                return
 
     # endregion
 
@@ -322,7 +339,7 @@ class HrcspSsstndrdInfoService:
 
         gurl = f"{basicUrl}ao/OrderPlanSttusService/{selectApi}?"
         params['serviceKey'] = serivceKey
-        params['pageNo'] = pageNo
+        # params['pageNo'] = pageNo
         params['numOfRows'] = numOfRows
         params['type'] = "xml"
         params['orderBgnYm'] = orderBgnYm #  발주시작년월
@@ -340,16 +357,19 @@ class HrcspSsstndrdInfoService:
                 param += f"&{i}={params[i]}"
             co +=1
         # print (param)
-        url = gurl + param        
+        
+        
         
         while True:
+            url = gurl + param+f"&pageNo={pageNo}"       
+            print (url)
             req = requests.get(url)
             if req.status_code == 200:
                 root = ET.fromstring(req.text)
                 try:
                     # XML 파싱
                     root = ET.fromstring(req.text)
-                    totalCount = int(root.find('.//body').find('totalCount').text)  # API 응답에서 totalCount 사용
+                    totalCount = int(root.find('.//body').find('totalCount').text)
                     print(f"발주계획 용역 목록 조회 => {bidNtceNm}, totalCount = {totalCount}")
                     datas = []
                     print (len(datas))
@@ -381,11 +401,14 @@ class HrcspSsstndrdInfoService:
                     
 
                 except ET.ParseError as e:
-                    print(f"XML 파싱 에러: {e}")
+                    err = (f"XML 파싱 에러: {e}")
+                    logger.log(err)
                 except Exception as e:
-                    print(f"다른 에러 발생: {e}")
+                    err = (f"다른 에러 발생: {e}")
+                    logger.log(err)
             else:
-                print(f"요청 실패, 상태 코드: {req.status_code}")
+                err = (f"요청 실패, 상태 코드: {req.status_code}")
+                logger.log(err)
                 return
     # endregion
           
@@ -418,76 +441,85 @@ class BidPublicInfoService:
         }
 
         queryUrl = Util.SetqueryUrl(dict1)
+        pageNo = 1
+        totalCounts = 100
 
-        url = f"{basicUrl}ad/{classNm}/{selectApi}?pageNo=1&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}type=xml"
-        # print (url)
-        req = requests.get(url)
+        while True:
+            url = f"{basicUrl}ad/{classNm}/{selectApi}?pageNo={pageNo}&numOfRows=100&ServiceKey={serivceKey}&{queryUrl}type=xml"
+            # print (url)
+            req = requests.get(url)
 
-        if req.status_code == 200:
-            try:
-                # XML 파싱
-                root = ET.fromstring(req.text)
+            if req.status_code == 200:
+                try:
+                    # XML 파싱
+                    root = ET.fromstring(req.text)
 
-                totalCount =  (root.find('.//body').find('totalCount').text)
-                print ("용역 => ", totalCount)
+                    totalCount =  (root.find('.//body').find('totalCount').text)
+                    print ("용역 => ", totalCount)
 
-                # body -> items 태그로 이동
-                items = root.find('.//body/items')
-                datas =[]
-                if items is not None:
-                    count = 1
-                    
-                    for item in items.findall('item'):
-                        data = []
-                        # 각 item 태그에서 추출할 데이터 (필요한 태그 추가)
-                        ref_no = item.find('refNo').text if item.find('refNo') is not None else "N/A"
-                        srvceDivNm = item.find('srvceDivNm').text if item.find('srvceDivNm') is not None else "N/A" # 용역구분명
-                        bidNtceNo =item.find('bidNtceNo').text if item.find('bidNtceNo') is not None else "N/A" # 입찰공고번호 
-                        bidNtceOrd =item.find('bidNtceOrd').text if item.find('bidNtceOrd') is not None else "N/A" # 입찰공고차수
-                        bidNNoOrd = f"{bidNtceNo}-{bidNtceOrd}"
-                        ntceKindNm =item.find('ntceKindNm').text if item.find('ntceKindNm') is not None else "N/A" # 구분
-                        bidNtceNm = item.find('bidNtceNm').text if item.find('bidNtceNm') is not None else "N/A" # 입찰공고명
-                        # print (bidNtceNo, bidNtceOrd, bidNtceNm)
-                        ntceInsttNm = item.find('ntceInsttNm').text if item.find('ntceInsttNm') is not None else "N/A" # 공고기관명
-                        dminsttNm = item.find('dminsttNm').text if item.find('dminsttNm') is not None else "N/A" # 수요기관
+                    # body -> items 태그로 이동
+                    items = root.find('.//body/items')
+                    datas =[]
+                    if items is not None:                      
+                        for item in items.findall('item'):
+                            data = []
+                            # 각 item 태그에서 추출할 데이터 (필요한 태그 추가)
+                            ref_no = item.find('refNo').text if item.find('refNo') is not None else "N/A"
+                            srvceDivNm = item.find('srvceDivNm').text if item.find('srvceDivNm') is not None else "N/A" # 용역구분명
+                            bidNtceNo =item.find('bidNtceNo').text if item.find('bidNtceNo') is not None else "N/A" # 입찰공고번호 
+                            bidNtceOrd =item.find('bidNtceOrd').text if item.find('bidNtceOrd') is not None else "N/A" # 입찰공고차수
+                            bidNNoOrd = f"{bidNtceNo}-{bidNtceOrd}"
+                            ntceKindNm =item.find('ntceKindNm').text if item.find('ntceKindNm') is not None else "N/A" # 구분
+                            bidNtceNm = item.find('bidNtceNm').text if item.find('bidNtceNm') is not None else "N/A" # 입찰공고명
+                            # print (bidNtceNo, bidNtceOrd, bidNtceNm)
+                            ntceInsttNm = item.find('ntceInsttNm').text if item.find('ntceInsttNm') is not None else "N/A" # 공고기관명
+                            dminsttNm = item.find('dminsttNm').text if item.find('dminsttNm') is not None else "N/A" # 수요기관
+                            
+                            bidBeginDt = item.find('bidBeginDt').text if item.find('bidBeginDt') is not None else "N/A"  # 입찰개시일시
+                            bidNtceDt = item.find('bidNtceDt').text if item.find('bidNtceDt') is not None else "-"# 입찰공고일시
+                            bidClseDt = item.find('bidClseDt').text if item.find('bidClseDt') is not None else "-" # 게시일시 -> 입찰마감일시
+                            opengDt = item.find('opengDt').text if item.find('opengDt') is not None else "-" # 개찰일시
+
+                            presmptPrce = item.find('presmptPrce').text if item.find('presmptPrce') is not None else "N/A" #추정가격 
+                            vat = item.find('VAT').text if item.find('VAT')is not None else "N/A" # 부가가치세
+                            asignBdgtAmt = int(presmptPrce) + int(vat)
+                            # bdgtAmt = item.find('bdgtAmt').text if item.find('bdgtAmt') is not None else "N/A"
+                            data.append(srvceDivNm) # 용역구분
+                            data.append(bidNtceNo)
+                            data.append(bidNtceOrd) # 차수
+                            data.append(ntceKindNm)
+                            data.append(bidNtceNm)
+                            data.append(ntceInsttNm)
+                            data.append(dminsttNm)
+                            data.append(opengDt) # 개찰일시
+                            # data.append(bidBeginDt) # 입찰개시일시
+                            data.append(bidNtceDt) # 입찰공고일시
+                            data.append(bidClseDt) # 입찰마감일시
+                            data.append(asignBdgtAmt)
+                            
+                            datas.append(data)
+                        Sqlite.Upsert(datas,type="1")
+
+                        pageNo += 1  # 페이지 번호 증가
+                        # totalCount가 100 이하라면 반복 종료
+                        if totalCount > totalCounts:
+                            totalCounts = 100 * pageNo
+                        else:
+                            break
                         
-                        bidBeginDt = item.find('bidBeginDt').text if item.find('bidBeginDt') is not None else "N/A"  # 입찰개시일시
-                        bidNtceDt = item.find('bidNtceDt').text if item.find('bidNtceDt') is not None else "-"# 입찰공고일시
-                        bidClseDt = item.find('bidClseDt').text if item.find('bidClseDt') is not None else "-" # 게시일시 -> 입찰마감일시
-                        opengDt = item.find('opengDt').text if item.find('opengDt') is not None else "-" # 개찰일시
-
-                        presmptPrce = item.find('presmptPrce').text if item.find('presmptPrce') is not None else "N/A" #추정가격 
-                        vat = item.find('VAT').text if item.find('VAT')is not None else "N/A" # 부가가치세
-                        asignBdgtAmt = int(presmptPrce) + int(vat)
-                        # bdgtAmt = item.find('bdgtAmt').text if item.find('bdgtAmt') is not None else "N/A"
-                        data.append(srvceDivNm) # 용역구분
-                        data.append(bidNtceNo)
-                        data.append(bidNtceOrd) # 차수
-                        data.append(ntceKindNm)
-                        data.append(bidNtceNm)
-                        data.append(ntceInsttNm)
-                        data.append(dminsttNm)
-                        data.append(opengDt) # 개찰일시
-                        # data.append(bidBeginDt) # 입찰개시일시
-                        data.append(bidNtceDt) # 입찰공고일시
-                        data.append(bidClseDt) # 입찰마감일시
-                        data.append(asignBdgtAmt)
-                        
-                        datas.append(data)
-                    Sqlite.Upsert(datas,type="1")
+                    else:
+                            print("items 태그를 찾을 수 없습니다.")
                     
-                else:
-                        print("items 태그를 찾을 수 없습니다.")
-                
-            except ET.ParseError as e:
-                print(f"XML 파싱 에러: {e}")
-            except ValueError as e:
-                print(f"데이터 변환 에러: {e}")
-            except Exception as e:
-                print(f"다른 에러 발생: {e}")
-
-        else:
-            print(f"요청 실패, 상태 코드: {req.status_code}")
+                except ET.ParseError as e:
+                        err = (f"XML 파싱 에러: {e}")
+                        logger.log(err)
+                except Exception as e:
+                    err = (f"다른 에러 발생: {e}")
+                    logger.log(err)
+            else:
+                err = (f"요청 실패, 상태 코드: {req.status_code}")
+                logger.log(err)
+                return
 
     # endregion
 # endregion
@@ -551,16 +583,20 @@ class g2b_api(QDialog):
         self.setWindowTitle("5분 단축 - 당신의 퇴근요정!")
         self.setWindowIcon(QIcon('fairy.ico'))
 
+        # 입찰공고 날짜
         self.date_1.setDate(inputDate+ relativedelta(weeks=3))
         self.date_2.setDate(inputDate + relativedelta(months=2))
+        # 사전규격 날짜
         self.date_3.setDate(inputDate+ relativedelta(days=-7))
         self.date_4.setDate(inputDate)
         
-        self.dt_month1.setDate(inputDate)
-        self.dt_month2.setDate(inputDate+ relativedelta(months=1))
-        self.date_5.setDate(inputDate)
+        # 발주계획 날짜
+        self.dt_month1.setDate(inputDate+ relativedelta(months=-2))
+        self.dt_month2.setDate(inputDate+ relativedelta(years=1)+ relativedelta(months=-2))
+        # self.date_5.setDate(inputDate)
+        self.date_5.setDate(inputDate+ relativedelta(months=-1))
         self.rdo_1m.setChecked(True)
-        self.date_6.setDate(inputDate+ relativedelta(months=1))
+        self.date_6.setDate(inputDate)
 
         # self.rdo_N.setChecked(True)
         self.rdo_StatusY.setChecked(True)
@@ -569,17 +605,18 @@ class g2b_api(QDialog):
         self.txt_keyword.setText(datagov["keywords"])
 
         self.lb_result.setText('대기중')
-        self.change_ui()
+        self.gb_auto.hide()
+        # self.change_ui()
 
     def listener(self):
         self.btnOk.clicked.connect(self.run)
-        self.gb_auto.toggled.connect(self.change_ui)
-        self.btn_auto.clicked.connect(self.run_schedule)
-        self.btn_cancel.clicked.connect(self.cancel_schedule)
-        self.rdo_1m.toggled.connect(self.change_date6)
-        self.rdo_3m.toggled.connect(self.change_date6)
-        self.rdo_6m.toggled.connect(self.change_date6)
-        self.rdo_12m.toggled.connect(self.change_date6)
+        # self.gb_auto.toggled.connect(self.change_ui)
+        # self.btn_auto.clicked.connect(self.run_schedule)
+        # self.btn_cancel.clicked.connect(self.cancel_schedule)
+        self.rdo_1m.toggled.connect(self.change_date5)
+        self.rdo_3m.toggled.connect(self.change_date5)
+        self.rdo_6m.toggled.connect(self.change_date5)
+        self.rdo_12m.toggled.connect(self.change_date5)
 
         
     
@@ -589,15 +626,15 @@ class g2b_api(QDialog):
         else:
             self.btnOk.setEnabled(True)
 
-    def change_date6(self):
+    def change_date5(self):
         if (self.rdo_1m.isChecked()):
-            self.date_6.setDate(inputDate+ relativedelta(months=1))
+            self.date_5.setDate(inputDate+ relativedelta(months=-1))
         elif (self.rdo_3m.isChecked()):
-            self.date_6.setDate(inputDate+ relativedelta(months=3))
+            self.date_5.setDate(inputDate+ relativedelta(months=-3))
         elif (self.rdo_6m.isChecked()):
-            self.date_6.setDate(inputDate+ relativedelta(months=6))
+            self.date_5.setDate(inputDate+ relativedelta(months=-6))
         elif (self.rdo_12m.isChecked()):
-            self.date_6.setDate(inputDate+ relativedelta(months=12))
+            self.date_5.setDate(inputDate+ relativedelta(months=-12))
 
     def reSettingConfig(self):
         properies["datagov"]["savePath"] = self.txt_savePath.text()
@@ -608,11 +645,10 @@ class g2b_api(QDialog):
             properies.write(configfile)
     
     def defaultCheck(self, savePath):
-        
         if savePath =="":
             logger.log("저장경로를 입력해주세요.")
             QMessageBox.information(self, "알림","저장경로를 입력해주세요.")
-            return
+            return False
         else:
             # 유효 경로인지 체크
             if os.path.isdir(savePath) == True:
@@ -622,7 +658,7 @@ class g2b_api(QDialog):
             else:
                 logger.log("경로가 존재하지 않습니다")
                 QMessageBox.warning(self, "알림", "경로가 존재하지 않습니다.\n경로를 확인해주세요.")
-                return
+                return False
         
     # 체크된 개수를 업데이트하는 메소드 작성 예시
     def update_check_count(self):
@@ -659,10 +695,14 @@ class g2b_api(QDialog):
     def run(self):
         self.reSettingConfig() # config.ini 파일 조정
         savePath = self.txt_savePath.text()
-        self.defaultCheck(savePath)
+        check_savePath = self.defaultCheck(savePath)
+
+        if check_savePath == False:
+            return
 
         bidNtceNms = self.txt_keyword.text().split(',') # 사업명 검색
         self.lb_result.setText("수행 시작")
+        QApplication.processEvents()
         
 
         if self.chk_alert.isChecked():
@@ -673,6 +713,7 @@ class g2b_api(QDialog):
         # region [입찰공고용역 수행]
         if (self.gb_1.isChecked()):
             self.lb_result.setText("입찰공고용역 조회 시작")
+            QApplication.processEvents()
             start = datetime.strptime(self.date_1.text(),'%Y-%m-%d')
             end = datetime.strptime(self.date_2.text(),'%Y-%m-%d')
 
@@ -686,24 +727,26 @@ class g2b_api(QDialog):
                 startDate1 =current.strftime('%Y%m%d')+ "0000"
                 endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
                 print(f"기간: {startDate1} ~ {endDate1}")
-                pi += 5
                 for bidNtceNm in bidNtceNms:
                     BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
                 current = next_month
                 
                 self.lb_result.setText("입찰공고용역 조회 완료")
+                QApplication.processEvents()
             try:
                 selectDB1 = Sqlite.selectDB(savePath, type="1", alert=alertType)
                 self.lb_result.setText("입찰공고용역 내보내기 완료")
+                QApplication.processEvents()
             except Exception as e:
                 logger.log(e.__str__())
                 return
         # endregion
 
-        # region [사전규격격 수행]
+        # region [사전규격 수행]
         if (self.gb_2.isChecked()):
             print ("2-1")
             self.lb_result.setText("사전규격 조회시작")
+            QApplication.processEvents()
             try:
                 inputDate2 = datetime.strptime(self.date_3.text(),'%Y-%m-%d')
                 inputDate3 = datetime.strptime(self.date_4.text(),'%Y-%m-%d')
@@ -730,23 +773,29 @@ class g2b_api(QDialog):
 
         # region [발주계획 수행]
         if (self.gb_3.isChecked()):
-            print ("3-1")
+            # 발주시기
             orderBgnYm=(datetime.strptime(self.dt_month1.text(),'%Y-%m')).strftime('%Y%m')
             orderEndYm=(datetime.strptime(self.dt_month2.text(),'%Y-%m')).strftime('%Y%m')
+            # 조회기간간
             inqryBgnDt=datetime.strptime(self.date_5.text(),'%Y-%m-%d').strftime('%Y%m%d') + "0000"
             inqryEndDt=datetime.strptime(self.date_6.text(),'%Y-%m-%d').strftime('%Y%m%d') + "2359"
             
             self.lb_result.setText("발주계획 조회시작")
+            QApplication.processEvents()
             
 
             try:
-                print (orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt)
-                # for bidNtceNm in bidNtceNms:
-                #     HrcspSsstndrdInfoService.getOrderPlanSttusListServcPPSSrch(
-                #         orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt,bidNtceNm)
-                # selectDB3 = Sqlite.selectDB(savePath, type="3", alert=alertType)
+                # print (orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt)
+                for bidNtceNm in bidNtceNms:
+                    self.lb_result.setText("발주계획 조회중...")
+                    QApplication.processEvents()
+                    HrcspSsstndrdInfoService.getOrderPlanSttusListServcPPSSrch(
+                        orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt,bidNtceNm)
+                selectDB3 = Sqlite.selectDB(savePath, type="3", alert=alertType)
 
                 self.lb_result.setText("발주계획 수행완료")
+                QApplication.processEvents()
+                logger.log("발주계획 수행완료")
             except Exception as e:
                 logger.log(e.__str__())
                 print (e.__str__())
@@ -758,31 +807,7 @@ class g2b_api(QDialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    logger.init(os.getcwd(), "MyApp")
+    logger.init(os.getcwd(), "FairyQualityTime")
     window = g2b_api()
     window.show()
     sys.exit(app.exec_())
-
-
-
-# import schedule
-# import keyboard
-
-# def message1():
-#     print (datetime.now())
-#     print("스케쥴 실행중...")
-
-# schedule.every(5).seconds.do(message1)
-    
-# # step4.스캐쥴 시작
-# print (datetime.now())
-# while True:
-#     schedule.run_pending()
-#     if keyboard.is_pressed('esc'):
-#             print("ESC 키가 눌려졌습니다. 프로그램을 종료합니다.")
-#             break
-#     time.sleep(1)  # CPU 사용률을 낮추기 위해 1초 대기
-    
-
-
-
