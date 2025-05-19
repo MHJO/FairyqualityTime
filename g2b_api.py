@@ -2,10 +2,10 @@ import requests, os, sys
 import json
 import pandas as pd
 import xml.etree.ElementTree as ET
-import time
+import time as ttime
 import schedule
 # from modules import util
-from datetime import datetime
+from datetime import datetime, time
 from dateutil.relativedelta import relativedelta
 import sqlite3
 import configparser
@@ -13,7 +13,7 @@ from modules import logger
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox
-from PyQt5.QtCore import QDate
+from PyQt5.QtCore import QDate, QTimer
 from PyQt5.QtGui import QIcon
 
 """
@@ -38,7 +38,7 @@ indstrytyCd = datagov["indstrytyCd"]  # 업종코드
 
 
 # Excel 파일로 저장
-filename = "나라장터_{}.xlsx".format(time.strftime("%Y%m%d"))
+filename = "나라장터_{}.xlsx".format(ttime.strftime("%Y%m%d"))
 sheets = []
 counts = []
 rs_text=[]
@@ -82,6 +82,7 @@ class Sqlite:
             
             connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
             if type == "1":
+                logger.log("입찰공고용역 내보내기 수행중")
                 sql_command = """
                     SELECT srvceDivNm as 업무구분,
                         ntceKindNm as 구분, 
@@ -97,6 +98,7 @@ class Sqlite:
                 sheets.append(sheet_name)
 
             elif (type == "2"):
+                logger.log("사전규격 내보내기 수행중")
                 if statusType =="A":
                     sql_command = """
                         SELECT bsnsDivNm as 업무구분,
@@ -125,6 +127,7 @@ class Sqlite:
                 sheet_name="사전규격"
                 sheets.append(sheet_name)
             elif type == "3":
+                logger.log("발주계획 내보내기 수행중")
                 sql_command = """
                     select bizNm as 사업명,
                         orderInsttNm as 수요기관,
@@ -144,8 +147,9 @@ class Sqlite:
             print(f"조회된 행 개수: {count}")
             
             # print (result)
-            
+            logger.log(f"{sheet_name}({count})")
             rs_text.append(f"{sheet_name}({count})")
+
             
             # 컬럼명 포함 데이터프레임 생성
             col_names = [desc[0] for desc in cursor.description]  # SQL 쿼리 결과의 컬럼명 가져오기
@@ -162,26 +166,30 @@ class Sqlite:
             except FileNotFoundError:
                 # 파일이 없을 경우 빈 데이터프레임 생성 및 파일 저장
                 print(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
+                logger.log(f"'{file_path}' 파일이 존재하지 않아 새로 생성합니다.")
                 existing_df = pd.DataFrame()
                 with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
                     existing_df.to_excel(writer, sheet_name=sheet_name, index=False)
                 print(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
+                logger.log(f"새 파일 생성 후 '{sheet_name}' 시트를 추가했습니다.")
             except ValueError:
                 # 지정된 시트가 없을 경우 빈 데이터프레임 생성
                 print(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
+                logger.log(f"'{sheet_name}' 시트가 존재하지 않아 새로 생성합니다.")
                 existing_df = pd.DataFrame()
                 
             # Concatenate the existing and new DataFrames
             updated_df = pd.concat([existing_df, df_new], ignore_index=True)
             with pd.ExcelWriter(file_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
                 updated_df.to_excel(writer, sheet_name=sheet_name, index=False)
-            print("데이터가 'output.xlsx' 파일로 저장되었습니다.")
+            print(f"데이터가 '{filename}.xlsx' 파일로 저장되었습니다.")
+            logger.log(f"데이터가 '{filename}.xlsx' 파일로 저장되었습니다.")
 
             connection.close()
-            print (f"나라장터 조회({rs_text})")
+            print (f"나라장터 조회({set(rs_text)})")
             if alert =="Y":
-                print(sheets)
-                telegram_alert(file_path, caption=f"나라장터 조회({rs_text})")
+                # print(sheets)
+                telegram_alert(file_path, caption=f"나라장터 조회({set(rs_text)})")
 
             return True
         except Exception as e:
@@ -454,7 +462,7 @@ class BidPublicInfoService:
                     # XML 파싱
                     root = ET.fromstring(req.text)
 
-                    totalCount =  (root.find('.//body').find('totalCount').text)
+                    totalCount =  int(root.find('.//body').find('totalCount').text)
                     print ("용역 => ", totalCount)
 
                     # body -> items 태그로 이동
@@ -508,13 +516,13 @@ class BidPublicInfoService:
                             break
                         
                     else:
-                            print("items 태그를 찾을 수 없습니다.")
+                        print("items 태그를 찾을 수 없습니다.")
                     
                 except ET.ParseError as e:
-                        err = (f"XML 파싱 에러: {e}")
+                        err = (f"XML 파싱 에러: {e.__str__()}")
                         logger.log(err)
                 except Exception as e:
-                    err = (f"다른 에러 발생: {e}")
+                    err = (f"다른 에러 발생: {e.__str__()}")
                     logger.log(err)
             else:
                 err = (f"요청 실패, 상태 코드: {req.status_code}")
@@ -597,6 +605,7 @@ class g2b_api(QDialog):
         self.date_5.setDate(inputDate+ relativedelta(months=-1))
         self.rdo_1m.setChecked(True)
         self.date_6.setDate(inputDate)
+        self.sb_cycle.setValue(2)
 
         # self.rdo_N.setChecked(True)
         self.rdo_StatusY.setChecked(True)
@@ -605,20 +614,19 @@ class g2b_api(QDialog):
         self.txt_keyword.setText(datagov["keywords"])
 
         self.lb_result.setText('대기중')
-        self.gb_auto.hide()
-        # self.change_ui()
+        # self.gb_auto.hide()
+        self.change_ui()
 
     def listener(self):
         self.btnOk.clicked.connect(self.run)
-        # self.gb_auto.toggled.connect(self.change_ui)
-        # self.btn_auto.clicked.connect(self.run_schedule)
-        # self.btn_cancel.clicked.connect(self.cancel_schedule)
+        self.gb_auto.toggled.connect(self.change_ui)
+        self.btn_auto.clicked.connect(self.run_schedule)
+        self.btn_cancel.clicked.connect(self.cancel_schedule)
         self.rdo_1m.toggled.connect(self.change_date5)
         self.rdo_3m.toggled.connect(self.change_date5)
         self.rdo_6m.toggled.connect(self.change_date5)
         self.rdo_12m.toggled.connect(self.change_date5)
 
-        
     
     def change_ui(self):
         if (self.gb_auto.isChecked()):
@@ -674,25 +682,60 @@ class g2b_api(QDialog):
         # 기존에 예약된 작업 초기화
         schedule.clear()
         interval = self.sb_cycle.value()  # btn_auto 클릭 시 sb_cycle의 최종값 사용
-        schedule.every(interval).seconds.do(self.run)
+        # schedule.every(interval).hours.do(self.run)
+        schedule.every(interval).hours.do(self.limited_run)        
+        # schedule.every(interval).seconds.do(self.limited_run)     
         
         # QTimer를 생성하여 schedule.run_pending()을 주기적으로 호출
         if self.timer is None:
             self.timer = QTimer(self)
             self.timer.timeout.connect(lambda: schedule.run_pending())
-        self.timer.start(1000)  # 1초마다 실행
+        self.timer.start(1000)  # 1초마다 실행, cpu 과부하 방지
       
         self.lb_result.setText("스케줄 실행 중...")
+        logger.log(f"스케줄 시작됨: {interval}초 간격")
         print(f"스케줄 시작됨: {interval}초 간격")
     
+    def limited_run(self):
+        now = datetime.now().time()
+
+        s_hour = self.startTime.time().hour()
+        s_minute = self.startTime.time().minute()
+        e_hour = self.endTime.time().hour()
+        e_minute = self.endTime.time().minute()
+        start_time = time(s_hour, s_minute)
+        end_time = time(e_hour, e_minute)
+        
+        if start_time <= now < end_time:
+            self.run()
+            
+            # 예를 들어, UI에 실행 성공 메시지도 표시
+            self.lb_result.setText(f"작업이 {self.startTime.text()} ~ {self.endTime.text()} 실행 중입니다.")
+            logger.log(f"작업이 {self.startTime.text()} ~ {self.endTime.text()} 실행 중입니다.")
+        else:
+            # 이 부분은 로그 또는 UI 업데이트로 현재 시간이 범위 외임을 표시할 수 있음
+            # print("현재 시간은 허용된 시간대 외입니다.")
+            self.chk_alert.setChecked(False)
+            self.lb_result.setText("현재 허용된 시간이 지나 스케쥴이 자동 종료됩니다.")
+            self.cancel_schedule()
+            logger.log("현재 허용된 시간이 지나 스케쥴이 자동 종료됩니다.")
+            
+            
+
     def cancel_schedule(self):
         if self.timer is not None:
             self.timer.stop()
             self.lb_result.setText("스케줄 중지됨")
+            logger.log("스케줄 중지됨")
             print("스케줄이 중지되었습니다.")
 
 
     def run(self):
+        print (self.startTime.text())
+
+        return
+
+
         self.reSettingConfig() # config.ini 파일 조정
         savePath = self.txt_savePath.text()
         check_savePath = self.defaultCheck(savePath)
@@ -714,6 +757,7 @@ class g2b_api(QDialog):
         if (self.gb_1.isChecked()):
             self.lb_result.setText("입찰공고용역 조회 시작")
             QApplication.processEvents()
+            logger.log("입찰공고용역 조회 시작")
             start = datetime.strptime(self.date_1.text(),'%Y-%m-%d')
             end = datetime.strptime(self.date_2.text(),'%Y-%m-%d')
 
@@ -728,10 +772,14 @@ class g2b_api(QDialog):
                 endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
                 print(f"기간: {startDate1} ~ {endDate1}")
                 for bidNtceNm in bidNtceNms:
+                    self.lb_result.setText("입찰공고용역 조회중...")
+                    QApplication.processEvents()
+                    logger.log("입찰공고용역 조회중..")
                     BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
                 current = next_month
                 
                 self.lb_result.setText("입찰공고용역 조회 완료")
+                logger.log("입찰공고용역 조회완료")
                 QApplication.processEvents()
             try:
                 selectDB1 = Sqlite.selectDB(savePath, type="1", alert=alertType)
@@ -747,6 +795,7 @@ class g2b_api(QDialog):
             print ("2-1")
             self.lb_result.setText("사전규격 조회시작")
             QApplication.processEvents()
+            logger.log("사전규격 조회시작")
             try:
                 inputDate2 = datetime.strptime(self.date_3.text(),'%Y-%m-%d')
                 inputDate3 = datetime.strptime(self.date_4.text(),'%Y-%m-%d')
@@ -759,13 +808,17 @@ class g2b_api(QDialog):
                     statusType = 'Y'
 
                 for bidNtceNm in bidNtceNms:
+                    self.lb_result.setText("사전규격 조회중...")
+                    QApplication.processEvents()
                     HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(
                         inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm,
                         swBizObjYn='Y',statusType=statusType)
 
                 
                 selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType, alert=alertType)
-                    
+                self.lb_result.setText("사전규격 수행완료")
+                QApplication.processEvents()
+                logger.log("사전규격 수행완료")
             except Exception as e:
                 logger.log(e.__str__())
                 return
