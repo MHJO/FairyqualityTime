@@ -731,11 +731,6 @@ class g2b_api(QDialog):
 
 
     def run(self):
-        print (self.startTime.text())
-
-        return
-
-
         self.reSettingConfig() # config.ini 파일 조정
         savePath = self.txt_savePath.text()
         check_savePath = self.defaultCheck(savePath)
