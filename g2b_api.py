@@ -12,7 +12,7 @@ import configparser
 from modules import logger
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox
+from PyQt5.QtWidgets import QDialog,QApplication, QMessageBox, QPushButton
 from PyQt5.QtCore import QDate, QTimer
 from PyQt5.QtGui import QIcon
 
@@ -37,11 +37,17 @@ serivceKey = datagov["apikey"]
 indstrytyCd = datagov["indstrytyCd"]  # 업종코드
 
 
+telegram_config=properies['telegram']
+kakaoTalk_config=properies['kakaoTalk']
+
+
+
 # Excel 파일로 저장
 filename = "나라장터_{}.xlsx".format(ttime.strftime("%Y%m%d"))
 sheets = []
 counts = []
 rs_text=[]
+rs_dict ={}
 
 
 class Util:
@@ -65,17 +71,25 @@ class Util:
 # region [sqlite] 
 class Sqlite:
     def clearDB():
-        # DB 내용물 초기화
-        connection = sqlite3.connect(rf"{os.getcwd()}\Database\나라장터.db")
-        
-        sql_commands = ["DELETE FROM BidPblancListInfoServcPPSSrch",
-                       "DELETE FROM HrcspSsstndrdInfoService",
-                       "DELETE FROM OrderPlanSttusListServcPPSSrch"]
-        cursor = connection.cursor()
-        for sql_command in sql_commands:
-            cursor.execute(sql_command)
-        connection.commit()
-        connection.close()
+        db_path = rf"{os.getcwd()}\Database\나라장터.db"
+
+        if os.path.exists(db_path):       
+
+            # DB 내용물 초기화
+            connection = sqlite3.connect(db_path)
+            
+            sql_commands = ["DELETE FROM BidPblancListInfoServcPPSSrch",
+                        "DELETE FROM HrcspSsstndrdInfoService",
+                        "DELETE FROM OrderPlanSttusListServcPPSSrch"]
+            cursor = connection.cursor()
+            for sql_command in sql_commands:
+                cursor.execute(sql_command)
+            connection.commit()
+            connection.close()
+        else:
+            # 없으면 db 파일 생성
+            create_sql =""
+
     
     def selectDB(savePath, type="", statusType="", alert="N"):
         try:
@@ -149,6 +163,7 @@ class Sqlite:
             # print (result)
             logger.log(f"{sheet_name}({count})")
             rs_text.append(f"{sheet_name}({count})")
+            rs_dict[sheet_name] = count
 
             
             # 컬럼명 포함 데이터프레임 생성
@@ -186,10 +201,13 @@ class Sqlite:
             logger.log(f"데이터가 '{filename}.xlsx' 파일로 저장되었습니다.")
 
             connection.close()
+            
             print (f"나라장터 조회({set(rs_text)})")
             if alert =="Y":
                 # print(sheets)
                 telegram_alert(file_path, caption=f"나라장터 조회({set(rs_text)})")
+                
+                kakaoTalkTome(rs_dict)
 
             return True
         except Exception as e:
@@ -246,6 +264,7 @@ class Sqlite:
 
 # endregion
 
+# region [조달청_나라장터 발주서비스]
 class HrcspSsstndrdInfoService:
     '''	조달청_나라장터 발주서비스 '''
     
@@ -553,33 +572,128 @@ def telegram_alert(file_path, caption=""):
         telegram_config=properies['telegram']
         token = telegram_config['token']
         chat_id = telegram_config['chatId']
-        
-        url = f"https://api.telegram.org/bot{token}/sendDocument"
-        
-        data = {
-            "chat_id": chat_id,
-            "caption": caption  # 파일과 함께 첨부할 텍스트 (캡션)
-        }
-        
-        with open(file_path, "rb") as file:
-            files = {"document": file}
-            response = requests.post(url, data=data, files=files)
-        
-        # print(response.json())
+
+        if token == "" or chat_id == "":
+            logger.log("telegram token 설정이 되어 있지 않아 수행하지 않습니다.")
+            pass
+        else: 
+            url = f"https://api.telegram.org/bot{token}/sendDocument"
+
+            data = {
+                "chat_id": chat_id,
+                "caption": caption  # 파일과 함께 첨부할 텍스트 (캡션)
+            }
+            
+            with open(file_path, "rb") as file:
+                files = {"document": file}
+                response = requests.post(url, data=data, files=files)
+            
+            # print(response.json())
     except Exception as e:
         logger.log(e.__str__())
+        pass
+# endregion
+
+# region [카카오톡 - 나에게 알림]
+def kakaoTalkTome(text_content):
+    try:
+        url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
+        
+        ACCESS_TOKEN = kakaoTalk_config['token']
+        if ACCESS_TOKEN == "":
+            logger.log("ACCESS token 설정이 되어 있지 않아 수행하지 않습니다.")
+            pass
+        else:
+            # 헤더 설정: 인증(Authorization)에 토큰을 담습니다.
+            headers = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}", 
+            "Content-Type": "application/x-www-form-urlencoded"
+            }
+
+            # message_template = []
+            # message_template.append("나라장터 조회 결과")
+            # for key, value in text_content.items():
+            #     message_template.append(key)
+            #     message_template.append(value)
+
+
+            # 메시지 템플릿 설정 (JSON 형태)
+            message_template = {
+                "object_type": "text",
+                "text": f"{text_content}",
+                "link": { 
+                    "web_url": "https://www.g2b.go.kr"
+                }
+            }
+
+
+            # # 리스트 형식
+            # message_template = {
+            #     "object_type": "list",
+            #     "header_title": "나라장터 조회",
+            #     "header_link": {
+            #         "web_url": "https://developers.kakao.com"
+            #     },
+            #     "contents": [
+            #     ]
+            # }
+
+            # for key, value in text_content.items():
+            #     message_template["contents"].append({
+            #         "title": key,              
+            #         "description": str(value)+"건", 
+            #         "link": {
+            #             "web_url": "https://www.g2b.go.kr"
+            #             }
+            #     })
+
+            # message_template["buttons"] = [
+            #     {
+            #         "title": "전체 보기",
+            #         "link": {
+            #             "web_url": "https://www.g2b.go.kr",
+            #             "mobile_web_url": "http://m.daum.net"
+            #             }
+            #     }
+            # ]
+
+            # 파이썬 딕셔너리를 JSON 문자열로 변환
+            payload = {
+                "template_object": json.dumps(message_template)
+            }
+
+            # API 요청 보내기
+            response = requests.post(url, headers=headers, data=payload)
+
+            # 결과 확인
+            if response.status_code == 200:
+                print("메시지 전송 성공!")
+            else:
+                print(f"전송 실패! 에러 코드: {response.status_code}")
+                print(f"상세 내용: {response.text}")
+
+    except Exception as e:
+        print (e.__str__())
+        logger.log(e.__str__())
+        pass
+
+
 # endregion
 
 
-# region [g2b_api]
+
+# region [g2b_api - main]
 class g2b_api(QDialog):
+    # kakaoTalkTome("적용테스트")
     def __init__(self, parent =None):
         super().__init__()
         uic.loadUi(os.path.join(os.getcwd()+"/ui", os.path.splitext(os.path.basename(__file__))[0] + '.ui'), self)
-    
+        self.new_window = None
+
         self.init()
         self.initUi()
         self.listener()
+
     
     def init(self):
         Sqlite.clearDB()
@@ -627,6 +741,26 @@ class g2b_api(QDialog):
         self.rdo_6m.toggled.connect(self.change_date5)
         self.rdo_12m.toggled.connect(self.change_date5)
 
+        self.btn_alert.clicked.connect(self.alert_setting)
+
+
+    def alert_setting(self):
+        self.new_window = QDialog(self)
+        uic.loadUi(os.path.join(os.getcwd()+"/ui",'input_token.ui'), self.new_window)
+
+        
+        token = telegram_config['token']
+        chat_id = telegram_config['chatId']
+        ACCESS_TOKEN = kakaoTalk_config['token']
+
+        self.new_window.txt_telgramToken.setText(token)
+        self.new_window.txt_chatId.setText(chat_id)
+        self.new_window.txt_kakaoTalkToken.setText(ACCESS_TOKEN)
+        self.new_window.btn_Input.clicked.connect(lambda: [self.reSettingConfig(), self.new_window.close()])
+
+        self.new_window.show()
+
+        
     
     def change_ui(self):
         if (self.gb_auto.isChecked()):
@@ -634,6 +768,9 @@ class g2b_api(QDialog):
         else:
             self.btnOk.setEnabled(True)
 
+    
+
+        
     def change_date5(self):
         if (self.rdo_1m.isChecked()):
             self.date_5.setDate(inputDate+ relativedelta(months=-1))
@@ -648,9 +785,22 @@ class g2b_api(QDialog):
         properies["datagov"]["savePath"] = self.txt_savePath.text()
         properies["datagov"]["indstrytycd"] = self.txt_code.text()
         properies["datagov"]["keywords"] = self.txt_keyword.text()
+        if self.new_window is not None:
+            properies["telegram"]["token"] = self.new_window.txt_telgramToken.text()
+            properies["telegram"]["chatid"] = self.new_window.txt_chatId.text()
+            properies["kakaoTalk"]["token"] = self.new_window.txt_kakaoTalkToken.text()
         
-        with open(configPath, 'w', encoding='utf-8') as configfile:
-            properies.write(configfile)
+        try:
+            with open(configPath, 'w', encoding='utf-8') as configfile:
+                properies.write(configfile)
+
+            QMessageBox.information(self, "알림", "설정이 정상적으로 저장되었습니다.")
+        except Exception as e:
+            logger.log(e.__str__())
+        
+        
+
+    
     
     def defaultCheck(self, savePath):
         if savePath =="":
@@ -693,8 +843,8 @@ class g2b_api(QDialog):
         self.timer.start(1000)  # 1초마다 실행, cpu 과부하 방지
       
         self.lb_result.setText("스케줄 실행 중...")
-        logger.log(f"스케줄 시작됨: {interval}초 간격")
-        print(f"스케줄 시작됨: {interval}초 간격")
+        logger.log(f"스케줄 시작됨: {interval}시간 간격")
+        print(f"스케줄 시작됨: {interval}시간 간격")
     
     def limited_run(self):
         now = datetime.now().time()
@@ -745,6 +895,9 @@ class g2b_api(QDialog):
 
         if self.chk_alert.isChecked():
             alertType = "Y"
+            # TODO - 텔레그램 또는 카카오톡 api key 등록여부 확인 코드 필요
+
+
         else:
             alertType = "N"
 
@@ -816,6 +969,7 @@ class g2b_api(QDialog):
                 logger.log("사전규격 수행완료")
             except Exception as e:
                 logger.log(e.__str__())
+                
                 return
         # endregion
 
