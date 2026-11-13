@@ -5,3 +5,4 @@ venv
 modules/__pycache__/*.pyc
 *.log
 *.pdf
+config.ini
