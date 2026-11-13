@@ -27,7 +27,6 @@ properies.read(configPath, encoding='utf-8')
 datagov = properies['datagov']
 
 
-
 # API 변수 정의 
 basicUrl = "http://apis.data.go.kr/1230000/"
 serivceKey = datagov["apikey"]
