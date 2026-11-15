@@ -250,7 +250,7 @@
            <string notr="true">background-color: #2563eb; color: white; font-weight: bold; padding: 8px; border-radius: 6px;</string>
           </property>
           <property name="text">
-           <string>💾 등록 / 저장</string>
+           <string>등록 / 저장</string>
           </property>
          </widget>
         </item>
@@ -260,7 +260,7 @@
            <string notr="true">background-color: #e2e8f0; color: #334155; font-weight: bold; padding: 8px; border-radius: 6px;</string>
           </property>
           <property name="text">
-           <string>🔄 초기화</string>
+           <string>초기화</string>
           </property>
          </widget>
         </item>
@@ -279,6 +279,18 @@
        <layout class="QVBoxLayout" name="vbox_table">
         <item>
          <widget class="QTableWidget" name="table_works">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAsNeeded</enum>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QAbstractScrollArea::AdjustToContents</enum>
+          </property>
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
           </property>
@@ -320,27 +332,41 @@
         <item>
          <layout class="QHBoxLayout" name="hbox_list_btns">
           <item>
-           <spacer name="spacer_list">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="btn_delete">
-            <property name="styleSheet">
-             <string notr="true">background-color: #ef4444; color: white; font-weight: bold; padding: 6px 14px; border-radius: 6px;</string>
-            </property>
-            <property name="text">
-             <string>🗑️ 선택 업무 삭제</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="hbox_list_btns">
+            <item>
+             <spacer name="spacer_list">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_history">
+              <property name="styleSheet">
+               <string notr="true">background-color: #475569; color: white; font-weight: bold; padding: 6px 14px; border-radius: 6px;</string>
+              </property>
+              <property name="text">
+               <string>변경 이력 보기</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_delete">
+              <property name="styleSheet">
+               <string notr="true">background-color: #ef4444; color: white; font-weight: bold; padding: 6px 14px; border-radius: 6px;</string>
+              </property>
+              <property name="text">
+               <string>선택 업무 삭제</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>

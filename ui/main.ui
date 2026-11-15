@@ -221,7 +221,7 @@
       <item>
        <widget class="QGroupBox" name="gb_tools">
         <property name="title">
-         <string> 🛠️ 주요 업무 도구 </string>
+         <string>주요 업무 도구 </string>
         </property>
         <layout class="QVBoxLayout" name="vbox_tools">
          <property name="spacing">
@@ -251,7 +251,7 @@
             <cursorShape>PointingHandCursor</cursorShape>
            </property>
            <property name="text">
-            <string>🚀  나라장터 - 입찰용역 및 사전규격 수집</string>
+            <string>나라장터 - 입찰용역 및 사전규격 수집</string>
            </property>
           </widget>
          </item>
@@ -267,7 +267,7 @@
             <cursorShape>PointingHandCursor</cursorShape>
            </property>
            <property name="text">
-            <string>📋  업무관리 (자체 업무 등록 및 이력)
+            <string>업무관리 (자체 업무 등록 및 이력)
 준비중</string>
            </property>
           </widget>
@@ -287,7 +287,7 @@
             <cursorShape>PointingHandCursor</cursorShape>
            </property>
            <property name="text">
-            <string>📊  입찰 내역서 확인 (엑셀 뷰어)
+            <string>입찰 내역서 확인 (엑셀 뷰어)
 준비중</string>
            </property>
           </widget>
@@ -311,7 +311,7 @@
       <item>
        <widget class="QGroupBox" name="gb_calendar">
         <property name="title">
-         <string> 📅 종합 캘린더 및 일정 관리 </string>
+         <string>종합 캘린더 및 일정 관리 </string>
         </property>
         <layout class="QVBoxLayout" name="vbox_calendar">
          <property name="spacing">
