@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WorkManagerDialog</class>
+ <widget class="QDialog" name="WorkManagerDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1098</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>850</width>
+    <height>550</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>퇴근요정 - 업무 관리 및 이력</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+    QDialog {
+     background-color: #f1f5f9;
+    }
+    QLabel {
+     color: #1e293b;
+     font-size: 13px;
+     font-weight: 600;
+    }
+    QLineEdit, QComboBox, QDateEdit, QTextEdit {
+     background-color: #ffffff;
+     border: 1px solid #cbd5e1;
+     border-radius: 6px;
+     padding: 6px;
+     font-size: 13px;
+     color: #0f172a;
+    }
+    QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
+     border: 1px solid #2563eb;
+    }
+    QGroupBox {
+     font-weight: bold;
+     font-size: 14px;
+     color: #1e293b;
+     border: 1px solid #cbd5e1;
+     border-radius: 8px;
+     margin-top: 12px;
+     background-color: #ffffff;
+     padding-top: 10px;
+    }
+    QGroupBox::title {
+     subcontrol-origin: margin;
+     subcontrol-position: top left;
+     padding: 0 6px;
+    }
+    QTableWidget {
+     background-color: #ffffff;
+     border: 1px solid #cbd5e1;
+     border-radius: 6px;
+     gridline-color: #e2e8f0;
+     font-size: 13px;
+    }
+    QHeaderView::section {
+     background-color: #f8fafc;
+     color: #475569;
+     padding: 6px;
+     border: none;
+     border-bottom: 1px solid #cbd5e1;
+     font-weight: bold;
+    }
+   </string>
+  </property>
+  <layout class="QHBoxLayout" name="mainLayout" stretch="4,6">
+   <property name="spacing">
+    <number>16</number>
+   </property>
+   <property name="leftMargin">
+    <number>20</number>
+   </property>
+   <property name="topMargin">
+    <number>20</number>
+   </property>
+   <property name="rightMargin">
+    <number>20</number>
+   </property>
+   <property name="bottomMargin">
+    <number>20</number>
+   </property>
+   <item>
+    <widget class="QGroupBox" name="gb_input">
+     <property name="title">
+      <string> 업무 등록 및 수정 </string>
+     </property>
+     <layout class="QVBoxLayout" name="vbox_input">
+      <property name="spacing">
+       <number>12</number>
+      </property>
+      <item>
+       <layout class="QVBoxLayout" name="vbox_title">
+        <item>
+         <widget class="QLabel" name="lbl_title">
+          <property name="text">
+           <string>업무명</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="txt_work_title">
+          <property name="placeholderText">
+           <string>예: 주간 입찰 공고 분석 보고서 작성</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hbox_dates">
+        <item>
+         <layout class="QVBoxLayout" name="vbox_start_date">
+          <item>
+           <widget class="QLabel" name="lbl_start_date">
+            <property name="text">
+             <string>시작일</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="date_start">
+            <property name="calendarPopup">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vbox_end_date">
+          <item>
+           <widget class="QLabel" name="lbl_date">
+            <property name="text">
+             <string>마감일</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDateEdit" name="date_deadline">
+            <property name="calendarPopup">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hbox_status_repeat">
+        <item>
+         <layout class="QVBoxLayout" name="vbox_status">
+          <item>
+           <widget class="QLabel" name="lbl_status">
+            <property name="text">
+             <string>진행 상태</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cmb_status">
+            <item>
+             <property name="text">
+              <string>등록 (대기)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>진행중</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>완료</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vbox_repeat">
+          <item>
+           <widget class="QLabel" name="lbl_repeat">
+            <property name="text">
+             <string>반복 주기</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cmb_repeat">
+            <item>
+             <property name="text">
+              <string>반복 없음</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>매일 반복</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>매주 반복</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>매월 반복</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="vbox_memo">
+        <item>
+         <widget class="QLabel" name="lbl_memo">
+          <property name="text">
+           <string>비고 및 이력 사항</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="txt_memo">
+          <property name="placeholderText">
+           <string>특이사항, 관련 담당자 연락처, 진행 이력 등을 입력하세요.</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hbox_buttons">
+        <item>
+         <widget class="QPushButton" name="btn_save">
+          <property name="styleSheet">
+           <string notr="true">background-color: #2563eb; color: white; font-weight: bold; padding: 8px; border-radius: 6px;</string>
+          </property>
+          <property name="text">
+           <string>💾 등록 / 저장</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_clear">
+          <property name="styleSheet">
+           <string notr="true">background-color: #e2e8f0; color: #334155; font-weight: bold; padding: 8px; border-radius: 6px;</string>
+          </property>
+          <property name="text">
+           <string>🔄 초기화</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="vbox_right">
+     <item>
+      <widget class="QGroupBox" name="gb_list">
+       <property name="title">
+        <string> 등록된 업무 목록 </string>
+       </property>
+       <layout class="QVBoxLayout" name="vbox_table">
+        <item>
+         <widget class="QTableWidget" name="table_works">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <column>
+           <property name="text">
+            <string>상태</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>업무명</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>시작일</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>마감일</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>반복 주기</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>비고</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hbox_list_btns">
+          <item>
+           <spacer name="spacer_list">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_delete">
+            <property name="styleSheet">
+             <string notr="true">background-color: #ef4444; color: white; font-weight: bold; padding: 6px 14px; border-radius: 6px;</string>
+            </property>
+            <property name="text">
+             <string>🗑️ 선택 업무 삭제</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

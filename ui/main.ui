@@ -6,116 +6,410 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1080</width>
-    <height>691</height>
+    <width>1200</width>
+    <height>760</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>1000</width>
+    <height>650</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>퇴근요정 - 개인 업무 지원 및 일정 관리 시스템</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+    /* 전체 배경 */
+    QMainWindow {
+     background-color: #f1f5f9;
+    }
+
+    /* 메뉴바 및 상태바 */
+    QMenuBar {
+     background-color: #ffffff;
+     border-bottom: 1px solid #e2e8f0;
+     font-size: 13px;
+     color: #334155;
+     padding: 2px 8px;
+    }
+    QMenuBar::item {
+     background: transparent;
+     padding: 6px 12px;
+     border-radius: 4px;
+    }
+    QMenuBar::item:selected {
+     background-color: #f1f5f9;
+    }
+    QMenu {
+     background-color: #ffffff;
+     border: 1px solid #cbd5e1;
+     border-radius: 6px;
+     padding: 4px;
+    }
+    QMenu::item {
+     padding: 6px 24px;
+     border-radius: 4px;
+    }
+    QMenu::item:selected {
+     background-color: #2563eb;
+     color: #ffffff;
+    }
+    QStatusBar {
+     background-color: #ffffff;
+     border-top: 1px solid #e2e8f0;
+     color: #64748b;
+     font-size: 12px;
+    }
+
+    /* 상단 타이틀(홈) 버튼 */
+    QPushButton#btn_home {
+     font-size: 18px;
+     font-weight: bold;
+     color: #0f172a;
+     text-align: left;
+     padding: 4px 8px;
+     border: none;
+     background: transparent;
+    }
+
+    /* 서브 타이틀 라벨 */
+    QLabel#lbl_subtitle {
+     font-size: 13px;
+     color: #64748b;
+     padding-left: 10px;
+    }
+
+    /* 그룹박스 및 프레임 스타일 */
+    QGroupBox {
+     font-weight: bold;
+     font-size: 14px;
+     color: #1e293b;
+     border: 1px solid #cbd5e1;
+     border-radius: 12px;
+     background-color: #ffffff;
+     margin-top: 12px;
+     padding-top: 12px;
+    }
+    QGroupBox::title {
+     subcontrol-origin: margin;
+     subcontrol-position: top left;
+     padding: 0 8px;
+    }
+
+    /* 메인 도구 버튼 (btn_1: 나라장터) */
+    QPushButton#btn_1 {
+     background-color: #2563eb;
+     color: #ffffff;
+     font-size: 15px;
+     font-weight: bold;
+     border-radius: 10px;
+     border: none;
+     padding: 14px;
+    }
+    QPushButton#btn_1:hover {
+     background-color: #1d4ed8;
+    }
+
+    /* 보조 기능 버튼 (btn_4: 업무관리, btn_3: 엑셀뷰어) */
+    QPushButton#btn_4, QPushButton#btn_3 {
+     background-color: #ffffff;
+     color: #1e293b;
+     font-size: 14px;
+     font-weight: 600;
+     border-radius: 10px;
+     border: 1px solid #cbd5e1;
+     padding: 12px;
+    }
+    QPushButton#btn_4:hover, QPushButton#btn_3:hover {
+     background-color: #f8fafc;
+     border-color: #2563eb;
+     color: #2563eb;
+    }
+
+    /* 캘린더 및 테이블 스타일 */
+    QCalendarWidget QWidget {
+     alternate-background-color: #f8fafc;
+    }
+    QTableWidget {
+     background-color: #ffffff;
+     border: 1px solid #cbd5e1;
+     border-radius: 6px;
+     gridline-color: #e2e8f0;
+     font-size: 13px;
+    }
+    QHeaderView::section {
+     background-color: #f8fafc;
+     color: #475569;
+     padding: 6px;
+     border: none;
+     border-bottom: 1px solid #cbd5e1;
+     font-weight: bold;
+    }
+   </string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QFrame" name="frame">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>70</y>
-      <width>1051</width>
-      <height>571</height>
-     </rect>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>16</number>
     </property>
-    <property name="frameShape">
-     <enum>QFrame::StyledPanel</enum>
+    <property name="leftMargin">
+     <number>24</number>
     </property>
-    <property name="frameShadow">
-     <enum>QFrame::Raised</enum>
+    <property name="topMargin">
+     <number>16</number>
     </property>
-    <widget class="QPushButton" name="btn_1">
-     <property name="geometry">
-      <rect>
-       <x>30</x>
-       <y>20</y>
-       <width>241</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>나라장터 - 입찰용역 및 사전규격 조회</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btn_2">
-     <property name="geometry">
-      <rect>
-       <x>30</x>
-       <y>130</y>
-       <width>241</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>사원정보</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btn_3">
-     <property name="geometry">
-      <rect>
-       <x>30</x>
-       <y>190</y>
-       <width>241</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>휴가장부</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btn_4">
-     <property name="geometry">
-      <rect>
-       <x>30</x>
-       <y>70</y>
-       <width>241</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>신규등록</string>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QPushButton" name="btn_home">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>51</width>
-      <height>51</height>
-     </rect>
+    <property name="rightMargin">
+     <number>24</number>
     </property>
-    <property name="text">
-     <string/>
+    <property name="bottomMargin">
+     <number>24</number>
     </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../image/fairy.ico</normaloff>../image/fairy.ico</iconset>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>40</width>
-      <height>40</height>
-     </size>
-    </property>
-    <property name="flat">
-     <bool>true</bool>
-    </property>
-   </widget>
+    <item>
+     <layout class="QHBoxLayout" name="headerLayout">
+      <item>
+       <widget class="QPushButton" name="btn_home">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string> 5분 단축 - 당신의 퇴근요정</string>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>../image/fairy.ico</normaloff>../image/fairy.ico</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lbl_subtitle">
+        <property name="text">
+         <string>|  대시보드 및 일정 통합 관리</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="headerSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="dashboardLayout" stretch="4,6">
+      <property name="spacing">
+       <number>16</number>
+      </property>
+      <item>
+       <widget class="QGroupBox" name="gb_tools">
+        <property name="title">
+         <string> 🛠️ 주요 업무 도구 </string>
+        </property>
+        <layout class="QVBoxLayout" name="vbox_tools">
+         <property name="spacing">
+          <number>16</number>
+         </property>
+         <property name="leftMargin">
+          <number>20</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>20</number>
+         </property>
+         <property name="bottomMargin">
+          <number>20</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="btn_1">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>75</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="text">
+            <string>🚀  나라장터 - 입찰용역 및 사전규격 수집</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btn_4">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>75</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="text">
+            <string>📋  업무관리 (자체 업무 등록 및 이력)
+준비중</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btn_3">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>75</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="text">
+            <string>📊  입찰 내역서 확인 (엑셀 뷰어)
+준비중</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="toolSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="gb_calendar">
+        <property name="title">
+         <string> 📅 종합 캘린더 및 일정 관리 </string>
+        </property>
+        <layout class="QVBoxLayout" name="vbox_calendar">
+         <property name="spacing">
+          <number>12</number>
+         </property>
+         <property name="leftMargin">
+          <number>20</number>
+         </property>
+         <property name="topMargin">
+          <number>20</number>
+         </property>
+         <property name="rightMargin">
+          <number>20</number>
+         </property>
+         <property name="bottomMargin">
+          <number>20</number>
+         </property>
+         <item>
+          <widget class="QCalendarWidget" name="calendarWidget">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>260</height>
+            </size>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="autoFillBackground">
+            <bool>true</bool>
+           </property>
+           <property name="firstDayOfWeek">
+            <enum>Qt::Sunday</enum>
+           </property>
+           <property name="gridVisible">
+            <bool>true</bool>
+           </property>
+           <property name="selectionMode">
+            <enum>QCalendarWidget::SingleSelection</enum>
+           </property>
+           <property name="horizontalHeaderFormat">
+            <enum>QCalendarWidget::ShortDayNames</enum>
+           </property>
+           <property name="verticalHeaderFormat">
+            <enum>QCalendarWidget::NoVerticalHeader</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="table_main_schedule">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>140</height>
+            </size>
+           </property>
+           <property name="editTriggers">
+            <set>QAbstractItemView::NoEditTriggers</set>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <column>
+            <property name="text">
+             <string>상태</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>업무명</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>시작일</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>마감일</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1080</width>
-     <height>21</height>
+     <width>1200</width>
+     <height>34</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -135,21 +429,15 @@
    <property name="text">
     <string>나라장터 - 입찰용역 및 사전규격 조회</string>
    </property>
-   <property name="iconText">
-    <string>나라장터 - 입찰용역 및 사전규격 조회</string>
-   </property>
   </action>
   <action name="action2">
    <property name="text">
-    <string>사원정보</string>
-   </property>
-   <property name="iconText">
-    <string>사원정보</string>
+    <string>업무관리</string>
    </property>
   </action>
   <action name="action3">
    <property name="text">
-    <string>휴가장부</string>
+    <string>달력보기 (통합)</string>
    </property>
   </action>
   <action name="actionexit">
