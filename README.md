@@ -2,9 +2,11 @@
 
 
 ## 현재 버전
-- 0.0.0.9 (GUI버전)
-  
-![image](https://github.com/user-attachments/assets/51483f3d-859e-480f-bdbd-65e99213630a)
+- 0.0.0.12 (GUI버전)
+<img width="822" height="792" alt="image" src="https://github.com/user-attachments/assets/0306fce8-457a-4f91-a128-533abab4475e" />
+
+
+
 
 
 - 0.0.0.5 (CUI버전)
