@@ -1,0 +1,179 @@
+/* ==========================================
+   공고정보 조회 UI
+   Design : Compact / Redesign
+   ========================================== */
+
+QDialog#Dialog {
+  background: #f4f6f9;
+  color: #263445;
+  font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 9pt;
+}
+
+/* GroupBox */
+QGroupBox {
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  margin-top: 13px;
+  padding: 14px 12px 10px 12px;
+  font-weight: 600;
+  color: #263b53;
+}
+
+QGroupBox::title {
+  subcontrol-origin: margin;
+  subcontrol-position: top left;
+  left: 12px;
+  top: 2px;
+  padding: 2 8px;
+  color: #294b70;
+  background: #f4f6f9;
+}
+
+QGroupBox::indicator {
+  width: 16px;
+  height: 16px;
+}
+
+/* Label */
+QLabel {
+  color: #46566a;
+  background: transparent;
+}
+
+QLabel#label_14,
+QLabel#label_15,
+QLabel#label_16 {
+  color: #748397;
+  font-size: 8pt;
+  font-weight: 400;
+  padding-top: 3px;
+}
+
+/* Status */
+QLabel#lb_status {
+  color: #52677f;
+  background: #edf3f9;
+  border: 1px solid #dce6f0;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+QLabel#lb_result {
+  color: #23734d;
+  padding: 2px 4px;
+}
+
+/* Input */
+QLineEdit,
+QDateEdit,
+QTimeEdit,
+QSpinBox {
+  min-height: 27px;
+  background: #ffffff;
+  border: 1px solid #c9d3df;
+  border-radius: 4px;
+  padding: 2px 7px;
+  selection-background-color: #2f6fae;
+  selection-color: #ffffff;
+}
+
+QLineEdit:focus,
+QDateEdit:focus,
+QTimeEdit:focus,
+QSpinBox:focus {
+  border: 1px solid #397dbb;
+}
+
+QLineEdit:disabled,
+QDateEdit:disabled,
+QTimeEdit:disabled,
+QSpinBox:disabled {
+  color: #98a4b2;
+  background: #f0f2f5;
+  border-color: #e0e5eb;
+}
+
+QDateEdit::drop-down,
+QTimeEdit::drop-down {
+  width: 20px;
+  border: none;
+}
+
+QDateEdit::down-arrow,
+QTimeEdit::down-arrow {
+  width: 8px;
+  height: 8px;
+}
+
+/* Button */
+QPushButton {
+  min-height: 29px;
+  padding: 2px 14px;
+  color: #34465b;
+  background: #ffffff;
+  border: 1px solid #c8d3df;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+QPushButton:hover {
+  background: #edf4fb;
+  border-color: #8eacca;
+}
+
+QPushButton:pressed {
+  background: #dceaf7;
+}
+
+QPushButton:disabled {
+  color: #a4afbc;
+  background: #f0f2f5;
+  border-color: #e0e5eb;
+}
+
+/* Main Execute Button */
+QPushButton#btnOk {
+  color: #ffffff;
+  background: #28689f;
+  border: 1px solid #28689f;
+  min-width: 76px;
+}
+
+QPushButton#btnOk:hover {
+  background: #1f5788;
+  border-color: #1f5788;
+}
+
+QPushButton#btnOk:pressed {
+  background: #19476f;
+}
+
+/* Radio / Check */
+QRadioButton,
+QCheckBox {
+  spacing: 5px;
+  color: #46566a;
+  background: transparent;
+}
+
+QRadioButton::indicator,
+QCheckBox::indicator {
+  width: 16px;
+  height: 16px;
+}
+
+QRadioButton:disabled,
+QCheckBox:disabled {
+  color: #a4afbc;
+}
+
+/* Frame */
+QFrame#frame,
+QFrame#frame_3,
+QFrame#frame_4,
+QFrame#frame_5 {
+  background: transparent;
+  border: none;
+}
