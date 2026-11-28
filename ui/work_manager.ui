@@ -29,7 +29,7 @@
      font-size: 13px;
      font-weight: 600;
     }
-    QLineEdit, QComboBox, QDateEdit, QTextEdit {
+    QLineEdit, QComboBox, QDateEdit, QTimeEdit, QTextEdit {
      background-color: #ffffff;
      border: 1px solid #cbd5e1;
      border-radius: 6px;
@@ -37,7 +37,7 @@
      font-size: 13px;
      color: #0f172a;
     }
-    QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTextEdit:focus {
+    QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QTimeEdit:focus, QTextEdit:focus {
      border: 1px solid #2563eb;
     }
     QGroupBox {
@@ -148,6 +148,70 @@
            <widget class="QDateEdit" name="date_deadline">
             <property name="calendarPopup">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="chk_has_time">
+        <property name="text">
+         <string>시작·종료 시간 지정</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hbox_times">
+        <item>
+         <layout class="QVBoxLayout" name="vbox_start_time">
+          <item>
+           <widget class="QLabel" name="lbl_start_time">
+            <property name="text">
+             <string>시작시간</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeEdit" name="time_start">
+            <property name="displayFormat">
+             <string>HH:mm</string>
+            </property>
+            <property name="time">
+             <time>
+              <hour>9</hour>
+              <minute>0</minute>
+              <second>0</second>
+             </time>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vbox_end_time">
+          <item>
+           <widget class="QLabel" name="lbl_end_time">
+            <property name="text">
+             <string>종료시간</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeEdit" name="time_end">
+            <property name="displayFormat">
+             <string>HH:mm</string>
+            </property>
+            <property name="time">
+             <time>
+              <hour>10</hour>
+              <minute>0</minute>
+              <second>0</second>
+             </time>
             </property>
            </widget>
           </item>

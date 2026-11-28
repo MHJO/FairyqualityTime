@@ -3,6 +3,7 @@ import sys
 import json
 import time as ttime
 import sqlite3
+from contextlib import closing
 import configparser
 import requests
 import pandas as pd
@@ -99,20 +100,85 @@ class Util:
 # =========================================================
 class Sqlite:
     @staticmethod
+    def initialize_search_history():
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        with closing(sqlite3.connect(DB_PATH)) as connection:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS G2BSearchHistory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    search_type TEXT NOT NULL,
+                    search_keywords TEXT NOT NULL,
+                    search_start TEXT,
+                    search_end TEXT,
+                    save_path TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    result_count INTEGER NOT NULL,
+                    searched_at TEXT NOT NULL
+                )
+            """)
+            connection.commit()
+
+    @staticmethod
+    def record_search_history(
+        search_type, keywords, search_start, search_end,
+        save_path, file_path, result_count
+    ):
+        with closing(sqlite3.connect(DB_PATH)) as connection:
+            connection.execute("""
+                INSERT INTO G2BSearchHistory (
+                    search_type, search_keywords, search_start, search_end,
+                    save_path, file_path, result_count, searched_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                search_type,
+                json.dumps(keywords, ensure_ascii=False),
+                search_start,
+                search_end,
+                os.path.abspath(save_path),
+                os.path.abspath(file_path),
+                result_count,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            ))
+            connection.commit()
+
+    @staticmethod
+    def count_records(type, status_type=""):
+        table_names = {
+            "1": "BidPblancListInfoServcPPSSrch",
+            "2": "HrcspSsstndrdInfoService",
+            "3": "OrderPlanSttusListServcPPSSrch",
+        }
+        if type not in table_names:
+            raise ValueError(f"알 수 없는 조회 유형: {type}")
+        with closing(sqlite3.connect(DB_PATH)) as connection:
+            sql = f"SELECT COUNT(*) FROM {table_names[type]}"
+            if type == "2" and status_type == "Y":
+                sql += " WHERE Status != '마감'"
+            cursor = connection.execute(sql)
+            return cursor.fetchone()[0]
+
+    @staticmethod
     def clearDB():
         """기존 프로그램과 동일하게 실행 시작 시 세 조회 테이블을 초기화"""
         if not os.path.exists(DB_PATH):
             return
 
-        commands = [
-            "DELETE FROM BidPblancListInfoServcPPSSrch",
-            "DELETE FROM HrcspSsstndrdInfoService",
-            "DELETE FROM OrderPlanSttusListServcPPSSrch",
-        ]
-        with sqlite3.connect(DB_PATH) as connection:
+        result_tables = (
+            "BidPblancListInfoServcPPSSrch",
+            "HrcspSsstndrdInfoService",
+            "OrderPlanSttusListServcPPSSrch",
+        )
+        with closing(sqlite3.connect(DB_PATH)) as connection:
             cursor = connection.cursor()
-            for command in commands:
-                cursor.execute(command)
+            existing_tables = {
+                row[0] for row in cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                )
+            }
+            for table_name in result_tables:
+                if table_name in existing_tables:
+                    cursor.execute(f"DELETE FROM {table_name}")
             connection.commit()
 
     @staticmethod
@@ -549,6 +615,7 @@ class g2b_api(QDialog):
             print("스타일 로딩 오류:", e)
 
     def init(self):
+        Sqlite.initialize_search_history()
         Sqlite.clearDB()
 
     def initUi(self):
@@ -596,6 +663,20 @@ class g2b_api(QDialog):
             self.lb_status.setText(f"상태: {msg}")
         logger.log(msg)
         QApplication.processEvents()
+
+    def record_saved_search(
+        self, search_type, type_code, keywords, start, end, save_path,
+        status_type=""
+    ):
+        Sqlite.record_search_history(
+            search_type,
+            keywords,
+            start,
+            end,
+            save_path,
+            os.path.join(save_path, filename),
+            Sqlite.count_records(type_code, status_type),
+        )
 
     def change_ui(self):
         self.btnOk.setEnabled(not self.gb_auto.isChecked())
@@ -716,10 +797,11 @@ class g2b_api(QDialog):
     # 실행
     # -----------------------------------------------------
     def run(self):
-        global indstrytyCd
+        global indstrytyCd, filename
 
         self.reSettingConfig()
         indstrytyCd = self.txt_code.text().strip()
+        filename = f"나라장터_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.xlsx"
 
         savePath = self.txt_savePath.text().strip()
         if not self.defaultCheck(savePath):
@@ -765,6 +847,11 @@ class g2b_api(QDialog):
 
                 if not Sqlite.selectDB(savePath, type="1", alert=alert_type):
                     raise RuntimeError("입찰공고 엑셀 저장에 실패했습니다.")
+                self.record_saved_search(
+                    "입찰공고", "1", keywords,
+                    start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"),
+                    savePath,
+                )
                 self.update_status("입찰공고용역 조회 및 내보내기 완료")
 
             except Exception as e:
@@ -797,6 +884,11 @@ class g2b_api(QDialog):
                     savePath, type="2", statusType=status_type, alert=alert_type
                 ):
                     raise RuntimeError("사전규격 엑셀 저장에 실패했습니다.")
+                self.record_saved_search(
+                    "사전규격", "2", keywords,
+                    start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"),
+                    savePath, status_type,
+                )
                 self.update_status("사전규격 조회 및 내보내기 완료")
 
             except Exception as e:
@@ -835,6 +927,10 @@ class g2b_api(QDialog):
 
                 if not Sqlite.selectDB(savePath, type="3", alert=alert_type):
                     raise RuntimeError("발주계획 엑셀 저장에 실패했습니다.")
+                self.record_saved_search(
+                    "발주계획", "3", keywords,
+                    self.date_5.text(), self.date_6.text(), savePath,
+                )
                 self.update_status("발주계획 조회 및 내보내기 완료")
 
             except Exception as e:

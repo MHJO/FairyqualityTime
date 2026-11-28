@@ -5,12 +5,12 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, 
     QTableWidgetItem, QMessageBox, QLabel, QLineEdit, QTextEdit, 
-    QDateEdit, QComboBox, QFormLayout, QAbstractItemView, QWidget,
-    QApplication
+    QDateEdit, QTimeEdit, QComboBox, QFormLayout, QAbstractItemView, QWidget,
+    QApplication, QCheckBox
 )
 
 from PyQt5 import uic
-from PyQt5.QtCore import QDate
+from PyQt5.QtCore import QDate, QTime
 from .util import Util  # 공통 유틸 임포트
 
 APP_PATH = Util.get_app_path()
@@ -20,8 +20,73 @@ DB_PATH = os.path.join(APP_PATH, "Database", "work_database.db")
 UI_PATH = os.path.join(APP_PATH, "ui", "work_manager.ui")
 UI_HISTORY_PATH = os.path.join(APP_PATH, "ui", "work_history.ui")  # 이력 UI 파일 경로 (필요시 파일명 확인)
 
+
+def ensure_work_database_schema():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS works (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            start_date TEXT,
+            start_time TEXT,
+            end_date TEXT,
+            end_time TEXT,
+            status TEXT,
+            repeat_cycle TEXT,
+            memo TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS work_histories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_id INTEGER NOT NULL,
+            action_type TEXT NOT NULL,
+            old_title TEXT, new_title TEXT,
+            old_start_date TEXT, new_start_date TEXT,
+            old_start_time TEXT, new_start_time TEXT,
+            old_end_date TEXT, new_end_date TEXT,
+            old_end_time TEXT, new_end_time TEXT,
+            old_status TEXT, new_status TEXT,
+            old_memo TEXT, new_memo TEXT,
+            modified_at TEXT NOT NULL,
+            FOREIGN KEY (work_id) REFERENCES works (id) ON DELETE CASCADE
+        )
+    """)
+
+    add_missing_columns(
+        cursor,
+        "works",
+        {"start_time": "TEXT", "end_time": "TEXT"},
+    )
+    add_missing_columns(
+        cursor,
+        "work_histories",
+        {
+            "old_start_time": "TEXT",
+            "new_start_time": "TEXT",
+            "old_end_time": "TEXT",
+            "new_end_time": "TEXT",
+        },
+    )
+    conn.commit()
+    conn.close()
+
+
+def add_missing_columns(cursor, table_name, columns):
+    existing_columns = {
+        row[1] for row in cursor.execute(f"PRAGMA table_info({table_name})")
+    }
+    for column_name, column_type in columns.items():
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+            )
+
+
 class workManager(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, selected_date=None, selected_work_id=None):
         super().__init__(parent)
         
         # 메인 UI 파일 로드
@@ -32,6 +97,14 @@ class workManager(QDialog):
             return
 
         self.selected_work_id = None  # 선택된 업무 ID (수정/삭제용)
+        self.initial_work_id = (
+            str(selected_work_id) if selected_work_id is not None else None
+        )
+        self.initial_date = (
+            selected_date
+            if isinstance(selected_date, QDate) and selected_date.isValid()
+            else QDate.currentDate()
+        )
 
         self.init_db()
         self.init_ui_connections()
@@ -45,44 +118,17 @@ class workManager(QDialog):
 
     def init_db(self):
         """데이터베이스 및 테이블(works, work_histories) 초기화"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # 1. 원본 업무 테이블
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS works (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                start_date TEXT,
-                end_date TEXT,
-                status TEXT,
-                repeat_cycle TEXT,
-                memo TEXT
-            )
-        """)
-        
-        # 2. 변경 이력 테이블
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS work_histories (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                work_id INTEGER NOT NULL,
-                action_type TEXT NOT NULL,              -- 'INSERT', 'UPDATE', 'DELETE'
-                old_title TEXT, new_title TEXT,
-                old_start_date TEXT, new_start_date TEXT,
-                old_end_date TEXT, new_end_date TEXT,
-                old_status TEXT, new_status TEXT,
-                old_memo TEXT, new_memo TEXT,
-                modified_at TEXT NOT NULL,
-                FOREIGN KEY (work_id) REFERENCES works (id) ON DELETE CASCADE
-            )
-        """)
-        conn.commit()
-        conn.close()
+        ensure_work_database_schema()
 
     def init_ui_connections(self):
         """UI 컴포넌트 시그널(이벤트) 연결"""
-        self.date_start.setDate(QDate.currentDate())
-        self.date_deadline.setDate(QDate.currentDate())
+        self.date_start.setDate(self.initial_date)
+        self.date_deadline.setDate(self.initial_date)
+        self.time_start.setTime(QTime(9, 0))
+        self.time_end.setTime(QTime(10, 0))
+        self.chk_has_time.setChecked(True)
+        self.chk_has_time.toggled.connect(self.set_time_fields_enabled)
+        self.set_time_fields_enabled(self.chk_has_time.isChecked())
 
         self.btn_save.clicked.connect(self.save_work)
         self.btn_clear.clicked.connect(self.clear_form)
@@ -93,16 +139,28 @@ class workManager(QDialog):
 
         self.table_works.cellClicked.connect(self.on_cell_clicked)
         
-        self.table_works.setColumnCount(7)
-        self.table_works.setHorizontalHeaderLabels(["ID", "상태", "업무명", "시작일", "마감일", "반복 주기", "비고"])
+        self.table_works.setColumnCount(9)
+        self.table_works.setHorizontalHeaderLabels([
+            "ID", "상태", "업무명", "시작일", "시작시간",
+            "마감일", "종료시간", "반복 주기", "비고"
+        ])
         self.table_works.setColumnHidden(0, True)
+
+    def set_time_fields_enabled(self, enabled):
+        self.time_start.setEnabled(enabled)
+        self.time_end.setEnabled(enabled)
 
     def load_data(self):
         """테이블에 업무 목록 불러오기"""
         self.table_works.setRowCount(0)
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, status, title, start_date, end_date, repeat_cycle, memo FROM works ORDER BY id DESC")
+        cursor.execute("""
+            SELECT id, status, title, start_date, start_time, end_date,
+                   end_time, repeat_cycle, memo
+            FROM works
+            ORDER BY id DESC
+        """)
         rows = cursor.fetchall()
         conn.close()
 
@@ -112,13 +170,23 @@ class workManager(QDialog):
                 self.table_works.setItem(row_idx, col_idx, QTableWidgetItem(str(val) if val else ""))
         
         self.clear_form()
+        if self.initial_work_id is not None:
+            for row_idx in range(self.table_works.rowCount()):
+                item = self.table_works.item(row_idx, 0)
+                if item and item.text() == self.initial_work_id:
+                    self.on_cell_clicked(row_idx, 0)
+                    break
 
     def clear_form(self):
         """입력 폼 초기화 및 선택 해제"""
         self.selected_work_id = None
         self.txt_work_title.clear()
-        self.date_start.setDate(QDate.currentDate())
-        self.date_deadline.setDate(QDate.currentDate())
+        self.date_start.setDate(self.initial_date)
+        self.date_deadline.setDate(self.initial_date)
+        self.time_start.setTime(QTime(9, 0))
+        self.time_end.setTime(QTime(10, 0))
+        self.chk_has_time.setChecked(True)
+        self.set_time_fields_enabled(True)
         self.cmb_status.setCurrentIndex(0)
         self.cmb_repeat.setCurrentIndex(0)
         self.txt_memo.clear()
@@ -134,17 +202,32 @@ class workManager(QDialog):
         
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT title, start_date, end_date, status, repeat_cycle, memo FROM works WHERE id = ?", (self.selected_work_id,))
+        cursor.execute("""
+            SELECT title, start_date, start_time, end_date, end_time,
+                   status, repeat_cycle, memo
+            FROM works
+            WHERE id = ?
+        """, (self.selected_work_id,))
         row_data = cursor.fetchone()
         conn.close()
 
         if row_data:
-            title, start_date, end_date, status, repeat_cycle, memo = row_data
+            title, start_date, start_time, end_date, end_time, status, repeat_cycle, memo = row_data
             self.txt_work_title.setText(title or "")
             if start_date:
                 self.date_start.setDate(QDate.fromString(start_date, "yyyy-MM-dd"))
             if end_date:
                 self.date_deadline.setDate(QDate.fromString(end_date, "yyyy-MM-dd"))
+            has_time = bool(start_time and end_time)
+            self.chk_has_time.setChecked(has_time)
+            self.time_start.setTime(
+                QTime.fromString(start_time, "HH:mm")
+                if has_time else QTime(9, 0)
+            )
+            self.time_end.setTime(
+                QTime.fromString(end_time, "HH:mm")
+                if has_time else QTime(10, 0)
+            )
             self.cmb_status.setCurrentText(status or "등록 (대기)")
             self.cmb_repeat.setCurrentText(repeat_cycle or "반복 없음")
             self.txt_memo.setPlainText(memo or "")
@@ -152,10 +235,29 @@ class workManager(QDialog):
             self.btn_save.setText("✏️ 수정 내용 저장")
 
     def save_work(self):
+        if self.date_deadline.date() < self.date_start.date():
+            QMessageBox.warning(self, "날짜 확인", "마감일은 시작일보다 빠를 수 없습니다.")
+            return
+        if (
+            self.chk_has_time.isChecked()
+            and self.date_deadline.date() == self.date_start.date()
+            and self.time_end.time() <= self.time_start.time()
+        ):
+            QMessageBox.warning(self, "시간 확인", "종료시간은 시작시간보다 늦어야 합니다.")
+            return
+
         if self.selected_work_id is None:
             self.add_work()
         else:
             self.update_work()
+
+    def selected_times(self):
+        if not self.chk_has_time.isChecked():
+            return None, None
+        return (
+            self.time_start.time().toString("HH:mm"),
+            self.time_end.time().toString("HH:mm"),
+        )
 
     def add_work(self):
         title = self.txt_work_title.text().strip()
@@ -164,6 +266,7 @@ class workManager(QDialog):
             return
 
         start_date = self.date_start.date().toString("yyyy-MM-dd")
+        start_time, end_time = self.selected_times()
         end_date = self.date_deadline.date().toString("yyyy-MM-dd")
         status = self.cmb_status.currentText()
         repeat_cycle = self.cmb_repeat.currentText()
@@ -174,18 +277,27 @@ class workManager(QDialog):
         cursor = conn.cursor()
         
         cursor.execute("""
-            INSERT INTO works (title, start_date, end_date, status, repeat_cycle, memo)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (title, start_date, end_date, status, repeat_cycle, memo))
+            INSERT INTO works (
+                title, start_date, start_time, end_date, end_time,
+                status, repeat_cycle, memo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            title, start_date, start_time, end_date, end_time,
+            status, repeat_cycle, memo
+        ))
         
         work_id = cursor.lastrowid
 
         cursor.execute("""
             INSERT INTO work_histories (
-                work_id, action_type, new_title, new_start_date, new_end_date, 
-                new_status, new_memo, modified_at
-            ) VALUES (?, 'INSERT', ?, ?, ?, ?, ?, ?)
-        """, (work_id, title, start_date, end_date, status, memo, now))
+                work_id, action_type, new_title, new_start_date, new_start_time,
+                new_end_date, new_end_time, new_status, new_memo, modified_at
+            ) VALUES (?, 'INSERT', ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            work_id, title, start_date, start_time, end_date, end_time,
+            status, memo, now
+        ))
 
         conn.commit()
         conn.close()
@@ -200,6 +312,7 @@ class workManager(QDialog):
             return
 
         start_date = self.date_start.date().toString("yyyy-MM-dd")
+        start_time, end_time = self.selected_times()
         end_date = self.date_deadline.date().toString("yyyy-MM-dd")
         status = self.cmb_status.currentText()
         repeat_cycle = self.cmb_repeat.currentText()
@@ -209,36 +322,48 @@ class workManager(QDialog):
         conn = self.get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT title, start_date, end_date, status, memo FROM works WHERE id = ?", (self.selected_work_id,))
+        cursor.execute("""
+            SELECT title, start_date, start_time, end_date, end_time, status, memo
+            FROM works
+            WHERE id = ?
+        """, (self.selected_work_id,))
         old_data = cursor.fetchone()
         
         if not old_data:
             conn.close()
             return
 
-        old_title, old_start, old_end, old_status, old_memo = old_data
+        old_title, old_start, old_start_time, old_end, old_end_time, old_status, old_memo = old_data
 
         cursor.execute("""
             UPDATE works 
-            SET title = ?, start_date = ?, end_date = ?, status = ?, repeat_cycle = ?, memo = ?
+            SET title = ?, start_date = ?, start_time = ?, end_date = ?,
+                end_time = ?, status = ?, repeat_cycle = ?, memo = ?
             WHERE id = ?
-        """, (title, start_date, end_date, status, repeat_cycle, memo, self.selected_work_id))
+        """, (
+            title, start_date, start_time, end_date, end_time, status,
+            repeat_cycle, memo, self.selected_work_id
+        ))
 
         cursor.execute("""
             INSERT INTO work_histories (
                 work_id, action_type, 
                 old_title, new_title, 
                 old_start_date, new_start_date, 
+                old_start_time, new_start_time,
                 old_end_date, new_end_date, 
+                old_end_time, new_end_time,
                 old_status, new_status, 
                 old_memo, new_memo, 
                 modified_at
-            ) VALUES (?, 'UPDATE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, 'UPDATE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             self.selected_work_id, 
             old_title, title, 
             old_start, start_date, 
+            old_start_time, start_time,
             old_end, end_date, 
+            old_end_time, end_time,
             old_status, status, 
             old_memo, memo, 
             now
@@ -264,16 +389,24 @@ class workManager(QDialog):
         conn = self.get_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT title, start_date, end_date, status, memo FROM works WHERE id = ?", (self.selected_work_id,))
+        cursor.execute("""
+            SELECT title, start_date, start_time, end_date, end_time, status, memo
+            FROM works
+            WHERE id = ?
+        """, (self.selected_work_id,))
         old_data = cursor.fetchone()
 
         if old_data:
-            old_title, old_start, old_end, old_status, old_memo = old_data
+            old_title, old_start, old_start_time, old_end, old_end_time, old_status, old_memo = old_data
             cursor.execute("""
                 INSERT INTO work_histories (
-                    work_id, action_type, old_title, old_start_date, old_end_date, old_status, old_memo, modified_at
-                ) VALUES (?, 'DELETE', ?, ?, ?, ?, ?, ?)
-            """, (self.selected_work_id, old_title, old_start, old_end, old_status, old_memo, now))
+                    work_id, action_type, old_title, old_start_date, old_start_time,
+                    old_end_date, old_end_time, old_status, old_memo, modified_at
+                ) VALUES (?, 'DELETE', ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                self.selected_work_id, old_title, old_start, old_start_time,
+                old_end, old_end_time, old_status, old_memo, now
+            ))
 
         cursor.execute("DELETE FROM works WHERE id = ?", (self.selected_work_id,))
         conn.commit()
@@ -318,7 +451,9 @@ class workManager(QDialog):
             conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT action_type, old_title, new_title, old_status, new_status, modified_at 
+                SELECT action_type, old_title, new_title, old_status, new_status,
+                       old_start_time, new_start_time, old_end_time, new_end_time,
+                       modified_at
                 FROM work_histories 
                 WHERE work_id = ? 
                 ORDER BY id DESC
@@ -327,14 +462,30 @@ class workManager(QDialog):
             conn.close()
 
             for r_data in h_rows:
-                action, o_title, n_title, o_stat, n_stat, mod_at = r_data
+                (
+                    action, o_title, n_title, o_stat, n_stat,
+                    old_start_time, new_start_time, old_end_time, new_end_time,
+                    mod_at
+                ) = r_data
+                old_time = (
+                    f"{old_start_time or '종일'}-{old_end_time or '종일'}"
+                    if old_start_time or old_end_time else ""
+                )
+                new_time = (
+                    f"{new_start_time or '종일'}-{new_end_time or '종일'}"
+                    if new_start_time or new_end_time else ""
+                )
                 
                 if action == 'INSERT':
-                    desc = f"[등록] 업무명: '{n_title}' (상태: {n_stat})"
+                    desc = f"[등록] 업무명: '{n_title}' (상태: {n_stat}, 시간: {new_time or '미지정'})"
                 elif action == 'UPDATE':
-                    desc = f"[수정] 업무명: '{o_title}' ➔ '{n_title}' / 상태: {o_stat} ➔ {n_stat}"
+                    desc = (
+                        f"[수정] 업무명: '{o_title}' ➔ '{n_title}' / "
+                        f"상태: {o_stat} ➔ {n_stat} / 시간: "
+                        f"{old_time or '미지정'} ➔ {new_time or '미지정'}"
+                    )
                 elif action == 'DELETE':
-                    desc = f"[삭제] 업무명: '{o_title}' (상태: {o_stat})"
+                    desc = f"[삭제] 업무명: '{o_title}' (상태: {o_stat}, 시간: {old_time or '미지정'})"
                 else:
                     desc = f"유형: {action}"
 

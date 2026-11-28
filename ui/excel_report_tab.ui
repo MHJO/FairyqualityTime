@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HistoryReportWidget</class>
+ <widget class="QWidget" name="HistoryReportWidget">
+  <property name="styleSheet">
+   <string notr="true">
+QLabel#lbl_file_info, QLabel#lbl_count_title, QLabel#lbl_budget_title, QLabel#lbl_keywords_title { color: #64748b; }
+QFrame#frame_count, QFrame#frame_budget, QFrame#frame_keywords { background: #ffffff; border: 1px solid #dbe3ee; border-radius: 9px; }
+QTableWidget { background: #ffffff; border: 1px solid #dbe3ee; gridline-color: #e2e8f0; }
+QHeaderView::section { background: #f1f5f9; color: #475569; padding: 7px; border: 0; font-weight: 600; }
+QLineEdit { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px; }
+QPushButton { background: #ffffff; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px; }
+QPushButton:checked { background: #eff6ff; color: #1d4ed8; border-color: #60a5fa; font-weight: 600; }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="rootLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>4</number></property>
+   <property name="topMargin"><number>8</number></property>
+   <property name="rightMargin"><number>4</number></property>
+   <property name="bottomMargin"><number>4</number></property>
+   <item>
+    <widget class="QLabel" name="lbl_file_info">
+     <property name="text"><string>조회 정보</string></property>
+     <property name="wordWrap"><bool>true</bool></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="summaryLayout">
+     <item>
+      <widget class="QFrame" name="frame_count">
+       <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+       <layout class="QVBoxLayout" name="countLayout">
+        <item><widget class="QLabel" name="lbl_count_title"><property name="text"><string>총 수집 공고</string></property></widget></item>
+        <item><widget class="QLabel" name="lbl_count_value"><property name="text"><string>0건</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 700; color: #1d4ed8;</string></property></widget></item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_budget">
+       <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+       <layout class="QVBoxLayout" name="budgetLayout">
+        <item><widget class="QLabel" name="lbl_budget_title"><property name="text"><string>총 사업 금액</string></property></widget></item>
+        <item><widget class="QLabel" name="lbl_budget_value"><property name="text"><string>금액 정보 없음</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 700; color: #1d4ed8;</string></property></widget></item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_keywords">
+       <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+       <layout class="QVBoxLayout" name="keywordsLayout">
+        <item><widget class="QLabel" name="lbl_keywords_title"><property name="text"><string>조회 키워드</string></property></widget></item>
+        <item><widget class="QLabel" name="lbl_keywords_value"><property name="text"><string>-</string></property><property name="styleSheet"><string notr="true">font-size: 16px; font-weight: 700; color: #1d4ed8;</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="lbl_keyword_section">
+     <property name="text"><string>키워드별 분류 및 집계</string></property>
+     <property name="styleSheet"><string notr="true">font-size: 14px; font-weight: 700; color: #172554;</string></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="grid_keyword_filters">
+     <property name="spacing"><number>8</number></property>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="searchLayout">
+     <item><widget class="QLabel" name="lbl_table_title"><property name="text"><string>상세 데이터</string></property></widget></item>
+     <item>
+      <spacer name="searchSpacer">
+       <property name="orientation"><enum>Qt::Horizontal</enum></property>
+       <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="txt_search">
+       <property name="maximumSize"><size><width>360</width><height>16777215</height></size></property>
+       <property name="placeholderText"><string>공고명, 기관, 공고번호 검색...</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="table">
+     <property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property>
+     <property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property>
+     <property name="alternatingRowColors"><bool>true</bool></property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

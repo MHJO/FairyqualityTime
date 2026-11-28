@@ -32,7 +32,7 @@ datagov = properies['datagov']
 
 
 # API 변수 정의 
-basicUrl = "http://apis.data.go.kr/1230000/"
+basicUrl = "https://apis.data.go.kr/1230000/"
 serivceKey = datagov["apikey"]
 indstrytyCd = datagov["indstrytyCd"]  # 업종코드
 
@@ -450,13 +450,13 @@ class BidPublicInfoService:
        
     '''
     global classNm
-    classNm = "BidPublicInfoService"
+    classNm = "BidPublicInfoService02"
 
     # region[나라장터검색조건에 의한 입찰공고용역조회]
     def getBidPblancListInfoServcPPSSrch(inqryBgnDt="",inqryEndDt="",bidNtceNm="" ):
         
         print (f"나라장터검색조건에 의한 입찰공고용역조회 => {bidNtceNm}")
-        selectApi="getBidPblancListInfoServcPPSSrch"
+        selectApi="getBidPblancListInfoServcPPSSrch02"
 
         dict1 = {
             "inqryDiv":"2", # 조회구분 - 개찰일시
@@ -727,7 +727,7 @@ class g2b_api(QDialog):
         self.txt_code.setText(indstrytyCd)
         self.txt_keyword.setText(datagov["keywords"])
 
-        self.lb_result.setText('대기중')
+        # self.lb_result.setText('대기중')
         # self.gb_auto.hide()
         self.change_ui()
 
@@ -826,7 +826,7 @@ class g2b_api(QDialog):
         checked_count = sum(1 for widget in check_widgets if widget.isChecked())
         
         # 예를 들어, 총 3개 중 checked_count만큼 수행 상태를 표시합니다.
-        self.lb_result.setText("수행({}/{})".format(checked_count, len(check_widgets)))
+        # self.lb_result.setText("수행({}/{})".format(checked_count, len(check_widgets)))
 
     def run_schedule(self):
         # 기존에 예약된 작업 초기화
@@ -842,7 +842,7 @@ class g2b_api(QDialog):
             self.timer.timeout.connect(lambda: schedule.run_pending())
         self.timer.start(1000)  # 1초마다 실행, cpu 과부하 방지
       
-        self.lb_result.setText("스케줄 실행 중...")
+        # self.lb_result.setText("스케줄 실행 중...")
         logger.log(f"스케줄 시작됨: {interval}시간 간격")
         print(f"스케줄 시작됨: {interval}시간 간격")
     
@@ -860,13 +860,13 @@ class g2b_api(QDialog):
             self.run()
             
             # 예를 들어, UI에 실행 성공 메시지도 표시
-            self.lb_result.setText(f"작업이 {self.startTime.text()} ~ {self.endTime.text()} 실행 중입니다.")
+            # self.lb_result.setText(f"작업이 {self.startTime.text()} ~ {self.endTime.text()} 실행 중입니다.")
             logger.log(f"작업이 {self.startTime.text()} ~ {self.endTime.text()} 실행 중입니다.")
         else:
             # 이 부분은 로그 또는 UI 업데이트로 현재 시간이 범위 외임을 표시할 수 있음
             # print("현재 시간은 허용된 시간대 외입니다.")
             self.chk_alert.setChecked(False)
-            self.lb_result.setText("현재 허용된 시간이 지나 스케쥴이 자동 종료됩니다.")
+            # self.lb_result.setText("현재 허용된 시간이 지나 스케쥴이 자동 종료됩니다.")
             self.cancel_schedule()
             logger.log("현재 허용된 시간이 지나 스케쥴이 자동 종료됩니다.")
             
@@ -875,7 +875,7 @@ class g2b_api(QDialog):
     def cancel_schedule(self):
         if self.timer is not None:
             self.timer.stop()
-            self.lb_result.setText("스케줄 중지됨")
+            # self.lb_result.setText("스케줄 중지됨")
             logger.log("스케줄 중지됨")
             print("스케줄이 중지되었습니다.")
 
@@ -889,7 +889,7 @@ class g2b_api(QDialog):
             return
 
         bidNtceNms = self.txt_keyword.text().split(',') # 사업명 검색
-        self.lb_result.setText("수행 시작")
+        # self.lb_result.setText("수행 시작")
         QApplication.processEvents()
         
 
@@ -903,7 +903,7 @@ class g2b_api(QDialog):
 
         # region [입찰공고용역 수행]
         if (self.gb_1.isChecked()):
-            self.lb_result.setText("입찰공고용역 조회 시작")
+            # self.lb_result.setText("입찰공고용역 조회 시작")
             QApplication.processEvents()
             logger.log("입찰공고용역 조회 시작")
             start = datetime.strptime(self.date_1.text(),'%Y-%m-%d')
@@ -920,18 +920,18 @@ class g2b_api(QDialog):
                 endDate1 =(next_month-relativedelta(days=1)).strftime('%Y%m%d')+ "2359"
                 print(f"기간: {startDate1} ~ {endDate1}")
                 for bidNtceNm in bidNtceNms:
-                    self.lb_result.setText("입찰공고용역 조회중...")
+                    # self.lb_result.setText("입찰공고용역 조회중...")
                     QApplication.processEvents()
                     logger.log("입찰공고용역 조회중..")
                     BidPublicInfoService.getBidPblancListInfoServcPPSSrch(startDate1,endDate1,bidNtceNm=bidNtceNm)
                 current = next_month
                 
-                self.lb_result.setText("입찰공고용역 조회 완료")
+                # self.lb_result.setText("입찰공고용역 조회 완료")
                 logger.log("입찰공고용역 조회완료")
                 QApplication.processEvents()
             try:
                 selectDB1 = Sqlite.selectDB(savePath, type="1", alert=alertType)
-                self.lb_result.setText("입찰공고용역 내보내기 완료")
+                # self.lb_result.setText("입찰공고용역 내보내기 완료")
                 QApplication.processEvents()
             except Exception as e:
                 logger.log(e.__str__())
@@ -941,7 +941,7 @@ class g2b_api(QDialog):
         # region [사전규격 수행]
         if (self.gb_2.isChecked()):
             print ("2-1")
-            self.lb_result.setText("사전규격 조회시작")
+            # self.lb_result.setText("사전규격 조회시작")
             QApplication.processEvents()
             logger.log("사전규격 조회시작")
             try:
@@ -956,7 +956,7 @@ class g2b_api(QDialog):
                     statusType = 'Y'
 
                 for bidNtceNm in bidNtceNms:
-                    self.lb_result.setText("사전규격 조회중...")
+                    # self.lb_result.setText("사전규격 조회중...")
                     QApplication.processEvents()
                     HrcspSsstndrdInfoService.getPublicPrcureThngInfoServcPPSSrch(
                         inqryDiv='1',inqryBgnDt=startDate2,inqryEndDt=endDate2,bidNtceNm=bidNtceNm,
@@ -964,7 +964,7 @@ class g2b_api(QDialog):
 
                 
                 selectDB2 = Sqlite.selectDB(savePath, type="2",statusType=statusType, alert=alertType)
-                self.lb_result.setText("사전규격 수행완료")
+                # self.lb_result.setText("사전규격 수행완료")
                 QApplication.processEvents()
                 logger.log("사전규격 수행완료")
             except Exception as e:
@@ -982,20 +982,20 @@ class g2b_api(QDialog):
             inqryBgnDt=datetime.strptime(self.date_5.text(),'%Y-%m-%d').strftime('%Y%m%d') + "0000"
             inqryEndDt=datetime.strptime(self.date_6.text(),'%Y-%m-%d').strftime('%Y%m%d') + "2359"
             
-            self.lb_result.setText("발주계획 조회시작")
+            # self.lb_result.setText("발주계획 조회시작")
             QApplication.processEvents()
             
 
             try:
                 # print (orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt)
                 for bidNtceNm in bidNtceNms:
-                    self.lb_result.setText("발주계획 조회중...")
+                    # self.lb_result.setText("발주계획 조회중...")
                     QApplication.processEvents()
                     HrcspSsstndrdInfoService.getOrderPlanSttusListServcPPSSrch(
                         orderBgnYm,orderEndYm,inqryBgnDt,inqryEndDt,bidNtceNm)
                 selectDB3 = Sqlite.selectDB(savePath, type="3", alert=alertType)
 
-                self.lb_result.setText("발주계획 수행완료")
+                # self.lb_result.setText("발주계획 수행완료")
                 QApplication.processEvents()
                 logger.log("발주계획 수행완료")
             except Exception as e:

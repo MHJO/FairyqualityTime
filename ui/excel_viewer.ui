@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExcelViewerDialog</class>
+ <widget class="QDialog" name="ExcelViewerDialog">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1280</width><height>680</height></rect>
+  </property>
+  <property name="minimumSize">
+   <size><width>900</width><height>500</height></size>
+  </property>
+  <property name="windowTitle">
+   <string>나라장터 조회 이력</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QDialog { background: #f4f6f9; color: #0f172a; }
+QLabel#lbl_title { color: #172554; font-size: 18px; font-weight: 700; }
+QLabel#lbl_subtitle, QLabel#lbl_status { color: #64748b; }
+QTableWidget { background: #ffffff; border: 1px solid #dbe3ee; gridline-color: #e2e8f0; }
+QHeaderView::section { background: #f1f5f9; color: #475569; padding: 7px; border: 0; font-weight: 600; }
+QPushButton { background: #ffffff; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px; }
+QPushButton:hover { background: #eff6ff; border-color: #93c5fd; }
+QPushButton#btn_query { background: #2563eb; color: #ffffff; border-color: #2563eb; font-weight: 600; }
+QPushButton#btn_query:hover { background: #1d4ed8; }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="rootLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>22</number></property>
+   <property name="topMargin"><number>18</number></property>
+   <property name="rightMargin"><number>22</number></property>
+   <property name="bottomMargin"><number>18</number></property>
+   <item>
+    <widget class="QLabel" name="lbl_title">
+     <property name="text"><string>나라장터 조회 이력</string></property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="lbl_subtitle">
+     <property name="text"><string>조회 이력을 선택한 뒤 조회를 누르면 저장된 엑셀 데이터를 확인합니다.</string></property>
+     <property name="wordWrap"><bool>true</bool></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="toolbarLayout">
+     <item>
+      <widget class="QCheckBox" name="chk_select_all">
+       <property name="text"><string>전체 선택</string></property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="toolbarSpacer">
+       <property name="orientation"><enum>Qt::Horizontal</enum></property>
+       <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_refresh">
+       <property name="text"><string>새로고침</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="table">
+     <property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property>
+     <property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property>
+     <property name="alternatingRowColors"><bool>true</bool></property>
+     <column><property name="text"><string/></property></column>
+     <column><property name="text"><string>ID</string></property></column>
+     <column><property name="text"><string>조회 일시</string></property></column>
+     <column><property name="text"><string>조회 유형</string></property></column>
+     <column><property name="text"><string>검색 키워드</string></property></column>
+     <column><property name="text"><string>조회 기간</string></property></column>
+     <column><property name="text"><string>건수</string></property></column>
+     <column><property name="text"><string>저장 파일</string></property></column>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="lbl_status">
+     <property name="text"><string>조회 이력 0건</string></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <item>
+      <spacer name="buttonSpacer">
+       <property name="orientation"><enum>Qt::Horizontal</enum></property>
+       <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_query">
+       <property name="text"><string>선택 항목 조회</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_close">
+       <property name="text"><string>닫기</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
